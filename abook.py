@@ -389,7 +389,10 @@ class AbookApplication(tornado.web.Application):
 
 class StreamHandler(tornado.web.StaticFileHandler):
 
-    def get(self, book_id, sequence, ext):
+    def head(self, book_id, sequence, ext):
+        return self.get(book_id, sequence, ext, include_body=False)
+
+    def get(self, book_id, sequence, ext, include_body=True):
         audiobook = self.application.abook
         if not audiobook.id == book_id:
             raise tornado.web.HTTPError(status_code=404)
@@ -398,7 +401,7 @@ class StreamHandler(tornado.web.StaticFileHandler):
         self.set_header('Content-Type', audio_file.mimetype)
         if not audio_file:
             raise tornado.web.HTTPError(404)
-        return super().get(audio_file.path)
+        return super().get(audio_file.path, include_body=include_body)
 
 
 class CoverHandler(tornado.web.StaticFileHandler):
@@ -520,9 +523,7 @@ def make_app(abook):
             name='rss',
         ),
         tornado.web.URLSpec(
-            r'''(?x)
-            /(?P<book_id>\d+)/stream/
-            (?P<sequence>\d+).(?P<ext>[A-Za-z0-9]{1,})''',
+            r'/(?P<book_id>\d+)/stream/(?P<sequence>\d+).(?P<ext>[\w]{1,})',
             StreamHandler,
             {'path': abook.path},
             name='stream',
