@@ -20,8 +20,7 @@ import tornado.ioloop
 import tornado.web
 
 
-first_of = operator.itemgetter(0)
-second_of = operator.itemgetter(1)
+first_of, second_of = map(operator.itemgetter, range(2))
 by_sequence = operator.attrgetter('sequence')
 
 RFC822 = '%a, %d %b %Y %H:%M:%S +0000'
@@ -44,13 +43,13 @@ mimetypes.add_type('audio/x-m4b', '.m4b')
 
 def ns(namespace: str, elem: str) -> str:
     '''Returns element name with namespace.'''
-    return "{%s}%s" % (namespace, elem)
+    return f'{{{namespace}}}{elem}'
 
 
 def format_duration(seconds: int) -> str:
     minutes, seconds = divmod(seconds, 60)
     hours, minutes = divmod(minutes, 60)
-    return '{:02.0f}:{:02.0f}:{:02.0f}'.format(hours, minutes, seconds)
+    return f'{hours:02.0f}:{minutes:02.0f}:{seconds:02.0f}'
 
 
 def switch_ext(filename: str, new_ext: str) -> str:
@@ -328,9 +327,7 @@ def do_transcode(args):
         )
         tags = get_tags(filename)
 
-        LOG.info(
-            'Transcoding: {0.path} to: {1}...'.format(af, output_filename)
-        )
+        LOG.info(f'Transcoding: {af.path} to: {output_filename}...')
         lame = subprocess.Popen([
             'lame',
             '--quiet',
@@ -367,13 +364,13 @@ def do_transcode(args):
         for narrator in narrators:
             opusenc_args.extend([
                 '--comment',
-                'narrator=%s' % narrator,
+                f'narrator={narrator}',
             ])
 
         if cover_filename:
             opusenc_args.extend([
                 '--picture',
-                '3||Front Cover||%s' % cover_filename,
+                f'3||Front Cover||{cover_filename}',
             ])
         opusenc = subprocess.Popen(opusenc_args, stdin=lame.stdout)
         lame.stdout.close()
@@ -439,7 +436,7 @@ class RSSHandler(tornado.web.RequestHandler):
         if not audiobook.id == book_id:
             raise tornado.web.HTTPError(status_code=404)
 
-        base_url = '{req.protocol}://{req.host}'.format(req=self.request)
+        base_url = f'{self.request.protocol}://{self.request.host}'
         cover_url = urllib.parse.urljoin(
             base_url, self.reverse_url('cover', audiobook.id))
         fanart_url = urllib.parse.urljoin(
@@ -455,7 +452,7 @@ class RSSHandler(tornado.web.RequestHandler):
         ET.SubElement(channel, 'link').text = base_url
         # ET.SubElement(channel, 'description').text = audiobook.summary
         ET.SubElement(channel, 'language').text = 'en-us'
-        ET.SubElement(channel, 'ttl').text = '%s' % TTL
+        ET.SubElement(channel, 'ttl').text = str(TTL)
         '''
         ET.SubElement(channel, 'lastBuildDate').text = time.strftime(
             RFC822, audiobook.pub_date.timetuple())
@@ -479,7 +476,7 @@ class RSSHandler(tornado.web.RequestHandler):
             ET.SubElement(item, 'title').text = i.title
             ET.SubElement(
                 item, 'guid', attrib={'isPermaLink': 'false'}
-            ).text = '%s' % i.sequence
+            ).text = str(i.sequence)
             ET.SubElement(item, 'pubDate').text = time.strftime(
                 RFC822,
                 (now - datetime.timedelta(seconds=i.sequence)).timetuple()
@@ -502,10 +499,10 @@ class RSSHandler(tornado.web.RequestHandler):
 
             ET.SubElement(item, 'enclosure', attrib={
                 'type': i.mimetype,
-                'length': '%d' % i.size,
+                'length': str(i.size),
                 'url': urllib.parse.urljoin(
                     base_url, self.reverse_url(
-                        'stream', audiobook.id, '%s' % i.sequence, i.ext),
+                        'stream', audiobook.id, str(i.sequence), i.ext),
                 ),
             })
 
