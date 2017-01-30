@@ -63,7 +63,6 @@ TAGS_KEYS = [
     'artist',
     'album',
     'title',
-    'narrator',
     'duration',
     'channels',
     'sample_rate',
@@ -77,7 +76,6 @@ class AudioFile(object):
     path = attr.ib()
     artist = attr.ib()
     title = attr.ib()
-    narrator = attr.ib()
     duration = attr.ib()
     size = attr.ib()
 
@@ -108,7 +106,6 @@ class ImageFile(object):
 class Audiobook(object):
     path = attr.ib()
     authors = attr.ib()
-    narrators = attr.ib()
     title = attr.ib()
     audio_files = attr.ib()
     image_files = attr.ib()
@@ -187,7 +184,6 @@ def get_tags(file_path):
         artist=artist,
         album=album,
         title=title,
-        narrator=None,
         duration=duration,
         channels=tags.info.channels,
         sample_rate=sample_rate,
@@ -255,7 +251,6 @@ def do_init(args):
             path=item_path,
             artist=author,
             title=tags.title,
-            narrator='',
             duration=tags.duration,
             size=os.path.getsize(abs_path),
             sequence=idx,
@@ -292,7 +287,6 @@ def do_init(args):
         id=id,
         path=audiobook_path,
         authors=list(authors.keys()),
-        narrators=[],
         title=album,
         audio_files=items,
         image_files=image_files,
@@ -357,16 +351,6 @@ def do_transcode(args):
             '-',
             output_filename,
         ]
-        narrators = book.narrators or []
-        if af.narrator:
-            narrators = [af.narrator]
-
-        for narrator in narrators:
-            opusenc_args.extend([
-                '--comment',
-                f'narrator={narrator}',
-            ])
-
         if cover_filename:
             opusenc_args.extend([
                 '--picture',
