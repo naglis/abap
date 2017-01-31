@@ -1,11 +1,11 @@
 import argparse
 import collections
+import configparser
 import datetime
 import logging
 import mimetypes
 import operator
 import os
-import random
 import re
 import subprocess
 import time
@@ -13,7 +13,6 @@ import urllib.parse
 import xml.dom.minidom
 import xml.etree.cElementTree as ET
 
-import attr
 import mutagen
 import yaml
 import tornado.ioloop
@@ -59,6 +58,54 @@ def switch_ext(filename: str, new_ext: str) -> str:
     )
 
 
+class AudiobookBundleLoader(object):
+
+    def load(self, fobj, source=None):
+        cp = configparser.ConfigParser()
+        cp.read_file(fobj, source=source)
+        if not cp.has_section('bundle'):
+            raise ValueError('Not a bundle')
+        bundle_type = cp.get('bundle', 'type', fallback='other')
+        extra = collections.OrderedDict(cp.items('bundle'))
+        extra.pop('type', None)
+
+        artifacts = []
+        for p in cp.sections():
+            if p == 'bundle':
+                continue
+            else:
+                artifact_type = cp.get(p, 'type', fallback='other')
+                aextra = collections.OrderedDict(cp.items(p))
+                extra.pop('type', None)
+                artifacts.append(Artifact(
+                    p,
+                    type=artifact_type,
+                    extra=aextra,
+                ))
+        return Bundle(
+            source,
+            type=bundle_type,
+            extra=extra,
+            artifacts=artifacts,
+        )
+
+
+class AudiobookBundleDumper(object):
+
+    def dump(self, fobj, bundle):
+        cp = configparser.ConfigParser()
+        cp.add_section('bundle')
+        cp.set('bundle', 'type', bundle.type)
+        for k, v in bundle.extra.items():
+            cp.set('bundle', k, str(v))
+        for a in bundle:
+            cp.add_section(a.path)
+            cp.set(a.path, 'type', a.type)
+            for k, v in a.extra.items():
+                cp.set(a.path, k, str(v))
+        cp.write(fobj)
+
+
 TAGS_KEYS = [
     'artist',
     'album',
@@ -70,14 +117,20 @@ TAGS_KEYS = [
 Tags = collections.namedtuple('Tags', TAGS_KEYS)
 
 
-@attr.s
-class AudioFile(object):
-    sequence = attr.ib()
-    path = attr.ib()
-    artist = attr.ib()
-    title = attr.ib()
-    duration = attr.ib()
-    size = attr.ib()
+class Artifact(object):
+
+    def __init__(self, path, type='other', extra=None):
+        self._path = path
+        self._type = type
+        self.extra = {} if extra is None else extra
+
+    @property
+    def path(self):
+        return self._path
+
+    @property
+    def type(self):
+        return self._type
 
     @property
     def mimetype(self):
@@ -88,57 +141,31 @@ class AudioFile(object):
         return second_of(os.path.splitext(self.path)).lstrip('.')
 
 
-@attr.s
-class ImageFile(object):
-    path = attr.ib()
-    image_type = attr.ib()
+class Bundle(collections.abc.Sequence):
+
+    def __init__(self, filename, artifacts=None, type='other', extra=None):
+        self._filename = filename
+        self._artifacts = [] if artifacts is None else artifacts
+        self._type = type
+        self.extra = {} if extra is None else extra
+
+    def __getitem__(self, idx):
+        return self._artifacts[idx]
+
+    def __len__(self):
+        return len(self._artifacts)
 
     @property
-    def mimetype(self):
-        return first_of(mimetypes.guess_type(self.path))
+    def path(self):
+        return os.path.dirname(self._filename)
 
     @property
-    def ext(self):
-        return second_of(os.path.splitext(self.path)).lstrip('.')
-
-
-@attr.s
-class Audiobook(object):
-    path = attr.ib()
-    authors = attr.ib()
-    title = attr.ib()
-    audio_files = attr.ib()
-    image_files = attr.ib()
-    id = attr.ib()
+    def slug(self):
+        return first_of(os.path.splitext(os.path.basename(self._filename)))
 
     @property
-    def duration(self) -> int:
-        return sum(i.duration for i in self.audio_files)
-
-    @classmethod
-    def from_dict(cls, d):
-        audio_files = [AudioFile(**a) for a in d.pop('audio_files', [])]
-        image_files = [ImageFile(**i) for i in d.pop('image_files', [])]
-        d['audio_files'] = audio_files
-        d['image_files'] = image_files
-        return cls(**d)
-
-    def audiofile_by_sequence(self, sequence):
-        for audio_file in self.audio_files:
-            if audio_file.sequence == sequence:
-                return audio_file
-
-    @property
-    def cover(self):
-        for image in self.image_files:
-            if image.image_type == 'cover':
-                return image
-
-    @property
-    def fanart(self):
-        for image in self.image_files:
-            if image.image_type == 'fanart':
-                return image
+    def type(self):
+        return self._type
 
 
 def single_item(tags):
@@ -215,6 +242,7 @@ def labeled_scan(path: str, label_funcs, path_join=os.path.join):
     results = collections.defaultdict(list)
     for subdir, dirs, files in os.walk(path):
         rel_dir = os.path.relpath(subdir, path)
+        rel_dir = '' if rel_dir == '.' else rel_dir
         for fn in files:
             for label, func in label_funcs.items():
                 if func(fn):
@@ -240,70 +268,52 @@ def do_init(args):
     covers = results.get('cover', [])
     fanarts = results.get('fanart', [])
 
-    items, authors, albums = (
+    artifacts, authors, albums = (
         [], collections.OrderedDict(), collections.OrderedDict(),
     )
     for idx, item_path in enumerate(audio_files, start=1):
         abs_path = os.path.join(args.directory, item_path)
         tags = get_tags(abs_path)
         author = tags.artist if tags.artist else 'Unknown artist'
-        item = AudioFile(
-            path=item_path,
-            artist=author,
-            title=tags.title,
-            duration=tags.duration,
-            size=os.path.getsize(abs_path),
-            sequence=idx,
+        item = Artifact(
+            item_path,
+            type='audio',
+            extra=dict(
+                artist=author,
+                title=tags.title,
+            ),
         )
         if tags.album:
             albums[tags.album] = True
         authors[author] = True
-        items.append(item)
+        artifacts.append(item)
 
     album = first_of(list(albums.keys())) if albums else 'Unknown album'
 
-    image_files = []
     if covers:
-        image_files.append(
-            ImageFile(
-                path=first_of(covers),
-                image_type='cover',
-            )
-        )
+        artifacts.append(Artifact(first_of(covers), type='cover'))
 
     if fanarts:
-        image_files.append(
-            ImageFile(
-                path=first_of(fanarts),
-                image_type='fanart',
-            )
-        )
+        artifacts.append(Artifact(first_of(fanarts), type='fanart'))
 
-    id = args.id or str(random.randint(0, 2 << 63))
-
-    audiobook_path = os.path.relpath(
-        args.directory, os.path.dirname(args.output))
-    book = Audiobook(
-        id=id,
-        path=audiobook_path,
-        authors=list(authors.keys()),
-        title=album,
-        audio_files=items,
-        image_files=image_files,
+    bundle = Bundle(
+        args.directory,
+        artifacts=artifacts,
+        type='audiobook',
+        extra=dict(
+            authors=list(authors.keys()),
+            title=album,
+        ),
     )
 
-    with open(args.output, 'w') as f:
-        f.write(yaml.dump(
-            attr.asdict(book),
-            indent=2,
-            default_flow_style=False,
-            explicit_start=True
-        ))
+    with open(os.path.join(args.directory, args.output), 'w') as f:
+        dumper = AudiobookBundleDumper()
+        dumper.dump(f, bundle)
 
 
 def do_transcode(args):
     data = yaml.load(args.abook_file)
-    book = Audiobook.from_dict(data)
+    # book = Audiobook.from_dict(data)
 
     cover_filename = None
     for image in book.image_files:
@@ -363,68 +373,73 @@ def do_transcode(args):
 
 class AbookApplication(tornado.web.Application):
 
-    def __init__(self, abook, *args, **kwargs):
+    def __init__(self, bundle, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.abook = abook
+        self.bundle = bundle
 
 
 class StreamHandler(tornado.web.StaticFileHandler):
 
-    def head(self, book_id, sequence, ext):
-        return self.get(book_id, sequence, ext, include_body=False)
+    def head(self, slug, sequence, ext):
+        return self.get(slug, sequence, ext, include_body=False)
 
-    def get(self, book_id, sequence, ext, include_body=True):
-        audiobook = self.application.abook
-        if not audiobook.id == book_id:
+    def get(self, slug, sequence, ext, include_body=True):
+        bundle = self.application.bundle
+        if not bundle.slug == slug:
             raise tornado.web.HTTPError(status_code=404)
 
-        audio_file = audiobook.audiofile_by_sequence(int(sequence))
-        self.set_header('Content-Type', audio_file.mimetype)
-        if not audio_file:
-            raise tornado.web.HTTPError(404)
-        return super().get(audio_file.path, include_body=include_body)
+        try:
+            artifact = bundle[int(sequence)]
+        except IndexError:
+            raise tornado.web.HTTPError(status_code=404)
+
+        self.set_header('Content-Type', artifact.mimetype)
+        return super().get(artifact.path, include_body=include_body)
 
 
 class CoverHandler(tornado.web.StaticFileHandler):
 
-    def get(self, book_id):
-        audiobook = self.application.abook
-        if not audiobook.id == book_id:
+    def get(self, slug):
+        bundle = self.application.bundle
+        if not bundle.slug == slug:
             raise tornado.web.HTTPError(status_code=404)
 
-        cover = audiobook.cover
-        if not cover:
+        covers = filter(lambda a: a.type == 'cover', bundle)
+        if not covers:
             raise tornado.web.HTTPError(404)
+        else:
+            cover = first_of(covers)
         self.set_header('Content-Type', cover.mimetype)
         return super().get(cover.path)
 
 
 class FanartHandler(tornado.web.StaticFileHandler):
 
-    def get(self, book_id):
-        audiobook = self.application.abook
-        if not audiobook.id == book_id:
+    def get(self, slug):
+        bundle = self.application.bundle
+        if not bundle.slug == slug:
             raise tornado.web.HTTPError(status_code=404)
 
-        fanart = audiobook.fanart
-        if not fanart:
+        fanarts = filter(lambda a: a.type == 'fanart', bundle)
+        if not fanarts:
             raise tornado.web.HTTPError(404)
+        else:
+            fanart = first_of(fanarts)
         self.set_header('Content-Type', fanart.mimetype)
         return super().get(fanart.path)
 
 
 class RSSHandler(tornado.web.RequestHandler):
 
-    def get(self, book_id):
-        audiobook = self.application.abook
-        if not audiobook.id == book_id:
+    def get(self, slug):
+        bundle = self.application.bundle
+        if not bundle.slug == slug:
             raise tornado.web.HTTPError(status_code=404)
-
         base_url = f'{self.request.protocol}://{self.request.host}'
         cover_url = urllib.parse.urljoin(
-            base_url, self.reverse_url('cover', audiobook.id))
+            base_url, self.reverse_url('cover', bundle.path))
         fanart_url = urllib.parse.urljoin(
-            base_url, self.reverse_url('fanart', audiobook.id))
+            base_url, self.reverse_url('fanart', bundle.path))
 
         ET.register_namespace('itunes', ITUNES_NS)
         ET.register_namespace('atom', ATOM_NS)
@@ -432,7 +447,7 @@ class RSSHandler(tornado.web.RequestHandler):
         rss = ET.Element('rss', attrib={'version': '2.0'})
         channel = ET.SubElement(rss, 'channel')
 
-        ET.SubElement(channel, 'title').text = audiobook.title
+        ET.SubElement(channel, 'title').text = bundle.extra.get('title', '')
         ET.SubElement(channel, 'link').text = base_url
         # ET.SubElement(channel, 'description').text = audiobook.summary
         ET.SubElement(channel, 'language').text = 'en-us'
@@ -443,31 +458,30 @@ class RSSHandler(tornado.web.RequestHandler):
         '''
         ET.SubElement(channel, ns(ATOM_NS, 'icon')).text = cover_url
         ET.SubElement(channel, ns(ATOM_NS, 'logo')).text = fanart_url
-        ET.SubElement(channel, ns(ITUNES_NS, 'author')).text = ', '.join(
-            audiobook.authors)
+        ET.SubElement(channel, ns(ITUNES_NS, 'author')).text = bundle.extra.get('authors', '')
         ET.SubElement(
             channel, ns(ITUNES_NS, 'image'), attrib={'href': cover_url})
 
         image = ET.SubElement(channel, 'image')
         ET.SubElement(image, 'url').text = cover_url
-        ET.SubElement(image, 'title').text = audiobook.title
+        ET.SubElement(image, 'title').text = bundle.extra.get('title', '')
         ET.SubElement(image, 'link').text = base_url
 
         now = datetime.datetime.now()
-        for i in sorted(audiobook.audio_files, key=by_sequence):
+        for idx, a in enumerate(filter(lambda a: a.type == 'audio', bundle)):
             item = ET.SubElement(channel, 'item')
 
-            ET.SubElement(item, 'title').text = i.title
+            ET.SubElement(item, 'title').text = a.extra.get('title', '')
             ET.SubElement(
                 item, 'guid', attrib={'isPermaLink': 'false'}
-            ).text = str(i.sequence)
+            ).text = str(idx)
             ET.SubElement(item, 'pubDate').text = time.strftime(
                 RFC822,
-                (now - datetime.timedelta(seconds=i.sequence)).timetuple()
+                (now - datetime.timedelta(seconds=idx)).timetuple()
             )
-            ET.SubElement(
-                item, ns(ITUNES_NS, 'duration')).text = format_duration(
-                    i.duration)
+            # ET.SubElement(
+                # item, ns(ITUNES_NS, 'duration')).text = format_duration(
+                    # i.duration)
             '''
             ET.SubElement(item, ns(ITUNES_NS, 'explicit')).text = (
                 'Yes' if i.explicit else 'No')
@@ -482,11 +496,12 @@ class RSSHandler(tornado.web.RequestHandler):
             '''
 
             ET.SubElement(item, 'enclosure', attrib={
-                'type': i.mimetype,
-                'length': str(i.size),
+                'type': a.mimetype,
+                'length': str(
+                    os.path.getsize(os.path.join(bundle.path, a.path))),
                 'url': urllib.parse.urljoin(
                     base_url, self.reverse_url(
-                        'stream', audiobook.id, str(i.sequence), i.ext),
+                        'stream', bundle.slug, str(idx), a.ext),
                 ),
             })
 
@@ -496,38 +511,37 @@ class RSSHandler(tornado.web.RequestHandler):
         )
 
 
-def make_app(abook):
-    return AbookApplication(abook, [
+def make_app(bundle):
+    return AbookApplication(bundle, [
+        tornado.web.URLSpec(r'/(?P<slug>\w+)', RSSHandler, name='rss'),
         tornado.web.URLSpec(
-            r'/(?P<book_id>\d+)',
-            RSSHandler,
-            name='rss',
-        ),
-        tornado.web.URLSpec(
-            r'/(?P<book_id>\d+)/stream/(?P<sequence>\d+).(?P<ext>[\w]{1,})',
+            r'/(?P<slug>\w+)/stream/(?P<sequence>\d+).(?P<ext>[\w]{1,})',
             StreamHandler,
-            {'path': abook.path},
+            {'path': bundle.path},
             name='stream',
         ),
         tornado.web.URLSpec(
-            r'/(?P<book_id>\d+)/cover',
+            r'/(?P<slug>\d+)/cover',
             CoverHandler,
-            {'path': abook.path},
+            {'path': bundle.path},
             name='cover',
         ),
         tornado.web.URLSpec(
-            r'/(?P<book_id>\d+)/fanart',
+            r'/(?P<slug>\d+)/fanart',
             FanartHandler,
-            {'path': abook.path},
+            {'path': bundle.path},
             name='fanart',
         ),
     ])
 
 
 def do_serve(args):
-    data = yaml.load(args.abook_file)
-    book = Audiobook.from_dict(data)
-    app = make_app(book)
+    loader = AudiobookBundleLoader()
+    bundle = loader.load(
+        args.abook_file,
+        source=os.path.abspath(args.abook_file.name),
+    )
+    app = make_app(bundle)
     app.listen(args.port)
     tornado.ioloop.IOLoop.current().start()
 
@@ -546,7 +560,7 @@ def main():
 
     init_parser = subparsers.add_parser('init')
     init_parser.add_argument('directory')
-    init_parser.add_argument('output', help='abook output file path')
+    init_parser.add_argument('output', help='abook output filename')
     init_parser.add_argument('--id')
     init_parser.set_defaults(func=do_init)
 
