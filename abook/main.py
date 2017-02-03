@@ -257,7 +257,6 @@ def do_init(args):
     )
 
     with open(os.path.join(args.directory, args.output), 'w') as f:
-        # dumper = AudiobookAbookDumper()
         yaml.dump(
             bundle.as_dict(), f,
             default_flow_style=False, indent=2, width=79)
@@ -265,7 +264,7 @@ def do_init(args):
 
 def do_transcode(args):
     data = yaml.load(args.abook_file)
-    # book = Audiobook.from_dict(data)
+    book = Abook.from_dict(data)
 
     cover_filename = None
     for image in book.image_files:
@@ -281,7 +280,7 @@ def do_transcode(args):
             args.output_dir,
             utils.switch_ext(basename, 'opus'),
         )
-        tags = tag_utils.get_tags(filename)
+        tags = tagutils.get_tags(filename)
 
         LOG.info(f'Transcoding: {af.path} to: {output_filename}...')
         lame = subprocess.Popen([
@@ -324,14 +323,9 @@ def do_transcode(args):
 
 
 def do_serve(args):
-    # loader = AudiobookAbookLoader()
     d = yaml.load(args.abook_file)
     bundle = Abook.from_dict(
         os.path.abspath(args.abook_file.name), d)
-    # bundle = loader.load(
-        # args.abook_file,
-        # source=os.path.abspath(args.abook_file.name),
-    # )
     bapp = app.make_app(bundle)
     bapp.listen(args.port)
     tornado.ioloop.IOLoop.current().start()
