@@ -59,6 +59,9 @@ class RSSHandler(tornado.web.RequestHandler):
         bundle = self.application.bundle
         if not bundle.slug == slug:
             raise tornado.web.HTTPError(status_code=404)
+
+        self.set_header('Content-Type', 'application/rss+xml; charset="utf-8"')
+
         base_url = f'{self.request.protocol}://{self.request.host}'
         cover_url = urllib.parse.urljoin(
             base_url, self.reverse_url('cover', bundle.slug))
@@ -130,7 +133,6 @@ class RSSHandler(tornado.web.RequestHandler):
                 ),
             })
 
-        self.set_header('Content-Type', 'application/rss+xml; charset="utf-8"')
         self.write(xml.dom.minidom.parseString(
             ET.tostring(rss, encoding='utf-8')).toprettyxml(),
         )

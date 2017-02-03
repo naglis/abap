@@ -7,14 +7,19 @@ import os
 import pathlib
 import subprocess
 
-import yaml
+import attr
 import tornado.ioloop
+import yaml
 
 from abook import app, scan, tagutils, utils
 
 mimetypes.add_type('audio/x-m4b', '.m4b')
 
 LOG = logging.getLogger(__name__)
+
+
+def non_negative(instance, attribute, value):
+    return value >= 0
 
 
 def is_cover(artifact):
@@ -73,7 +78,12 @@ class AudiobookAbookDumper(object):
         cp.write(fobj)
 
 
-class Duration(collections.namedtuple('DurationBase', ['duration'])):
+@attr.attrs(str=False, frozen=True)
+class Duration(object):
+    duration = attr.attrib(
+        convert=int,
+        validator=non_negative,
+    )
 
     def __str__(self):
         return utils.format_duration(self.duration)
@@ -83,11 +93,10 @@ class Duration(collections.namedtuple('DurationBase', ['duration'])):
         return cls(utils.parse_duration(s))
 
 
+@attr.attrs
 class Filelike(object):
-
-    def __init__(self, path):
-        self._path = pathlib.Path(path)
-        self._size = None
+    _path = attr.attrib(convert=pathlib.Path)
+    _size = attr.attrib(init=False, default=None)
 
     def __repr__(self):
         return f'<{self.__class__.__name__}:{self.path}>'
@@ -112,7 +121,7 @@ class Filelike(object):
 
     def as_dict(self) -> dict:
         return {
-            'path': str(self._path),
+            'path': str(self.path),
         }
 
     @classmethod
@@ -120,12 +129,10 @@ class Filelike(object):
         return cls(d.get('path'))
 
 
+@attr.attrs
 class Artifact(Filelike):
-
-    def __init__(self, path, description, type='other'):
-        super().__init__(path)
-        self.description = description
-        self.type = type
+    description = attr.attrib()
+    type = attr.attrib(default='other')
 
     def as_dict(self) -> dict:
         d = super().as_dict()
@@ -144,13 +151,11 @@ class Artifact(Filelike):
         )
 
 
+@attr.attrs
 class Audiofile(Filelike):
-
-    def __init__(self, path, author, title, duration=Duration(0)):
-        super().__init__(path)
-        self.author = author
-        self.title = title
-        self.duration = duration
+    author = attr.attrib()
+    title = attr.attrib()
+    duration = attr.attrib(default=0)
 
     @classmethod
     def from_dict(cls, d: dict):
@@ -172,16 +177,14 @@ class Audiofile(Filelike):
         return d
 
 
+@attr.attrs
 class Abook(collections.abc.Sequence):
     VERSION = 1
-
-    def __init__(self, filename, authors, title, audiofiles=None,
-                 artifacts=None):
-        self._filename = pathlib.Path(filename)
-        self.authors = authors
-        self.title = title
-        self._audiofiles = [] if audiofiles is None else audiofiles
-        self.artifacts = [] if artifacts is None else artifacts
+    _filename = attr.attrib(convert=pathlib.Path)
+    authors = attr.attrib()
+    title = attr.attrib()
+    _audiofiles = attr.attrib(default=attr.Factory(list), repr=False)
+    artifacts = attr.attrib(default=attr.Factory(list), repr=False)
 
     def __getitem__(self, idx):
         return self._audiofiles[idx]
@@ -305,7 +308,8 @@ def do_init(args):
     with open(os.path.join(args.directory, args.output), 'w') as f:
         # dumper = AudiobookAbookDumper()
         yaml.dump(
-            bundle.as_dict(), f, default_flow_style=False, indent=2, width=79)
+            bundle.as_dict(), f,
+            default_flow_style=False, indent=2, width=79)
 
 
 def do_transcode(args):
