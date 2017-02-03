@@ -202,15 +202,13 @@ def do_init(args):
             'audio': utils.audio_matcher,
             'cover': utils.cover_matcher,
             'fanart': utils.fanart_matcher,
+            'image': utils.image_matcher,
         }
     )
 
     audio_files = sorted(results.get('audio', []))
     if not audio_files:
         raise SystemExit('No audio files found!')
-
-    covers = results.get('cover', [])
-    fanarts = results.get('fanart', [])
 
     audiofiles, artifacts, authors, albums = (
         [], [], collections.OrderedDict(), collections.OrderedDict(),
@@ -232,21 +230,13 @@ def do_init(args):
 
     album = utils.first_of(list(albums.keys())) if albums else 'Unknown album'
 
-    if covers:
-        artifacts.append(Artifact(
-            utils.first_of(covers),
-            'Audiobook cover',
-            type='cover',)
-        )
-
-    if fanarts:
-        artifacts.append(
-            Artifact(
-                utils.first_of(fanarts),
-                'Audiobook fanart',
-                type='fanart',
-            )
-        )
+    unique = set()
+    for c in ('cover', 'fanart', 'image'):
+        for result in results.get(c, []):
+            if result in unique:
+                continue
+            artifacts.append(Artifact(result, c, type=c))
+            unique.add(result)
 
     bundle = Abook(
         args.directory,

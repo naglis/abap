@@ -23,6 +23,7 @@ def make_regex_filename_matcher(filenames=None, extensions=None):
 
 
 audio_matcher = make_regex_filename_matcher(extensions=const.AUDIO_EXTENSIONS)
+image_matcher = make_regex_filename_matcher(extensions=const.IMAGE_EXTENSIONS)
 cover_matcher = make_regex_filename_matcher(
     filenames=const.COVER_FILENAMES, extensions=const.IMAGE_EXTENSIONS)
 fanart_matcher = make_regex_filename_matcher(
