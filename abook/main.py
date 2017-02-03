@@ -1,6 +1,5 @@
 import argparse
 import collections
-import configparser
 import logging
 import mimetypes
 import os
@@ -28,54 +27,6 @@ def is_cover(artifact):
 
 def is_fanart(artifact):
     return artifact.type == 'fanart'
-
-
-class AudiobookAbookLoader(object):
-
-    def load(self, fobj, source=None):
-        cp = configparser.ConfigParser()
-        cp.read_file(fobj, source=source)
-        if not cp.has_section('bundle'):
-            raise ValueError('Not a bundle')
-        bundle_type = cp.get('bundle', 'type', fallback='other')
-        extra = collections.OrderedDict(cp.items('bundle'))
-        extra.pop('type', None)
-
-        audiofiles = []
-        for p in cp.sections():
-            if p == 'bundle':
-                continue
-            else:
-                artifact_type = cp.get(p, 'type', fallback='other')
-                aextra = collections.OrderedDict(cp.items(p))
-                extra.pop('type', None)
-                audiofiles.append(Audiofile(
-                    p,
-                    type=artifact_type,
-                    extra=aextra,
-                ))
-        return Abook(
-            source,
-            type=bundle_type,
-            extra=extra,
-            audiofiles=audiofiles,
-        )
-
-
-class AudiobookAbookDumper(object):
-
-    def dump(self, fobj, bundle):
-        cp = configparser.ConfigParser()
-        cp.add_section('bundle')
-        cp.set('bundle', 'type', bundle.type)
-        for k, v in bundle.extra.items():
-            cp.set('bundle', k, str(v))
-        for a in bundle:
-            cp.add_section(a.path)
-            cp.set(a.path, 'type', a.type)
-            for k, v in a.extra.items():
-                cp.set(a.path, k, str(v))
-        cp.write(fobj)
 
 
 @attr.attrs(str=False, frozen=True)
