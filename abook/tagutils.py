@@ -1,19 +1,17 @@
-import collections
-
+import attr
 import mutagen
 
 from abook import utils
 
 
-TAGS_KEYS = [
-    'artist',
-    'album',
-    'title',
-    'duration',
-    'channels',
-    'sample_rate',
-]
-Tags = collections.namedtuple('Tags', TAGS_KEYS)
+@attr.attrs(frozen=True)
+class Tags(object):
+    artist = attr.attrib()
+    album = attr.attrib()
+    title = attr.attrib()
+    duration = attr.attrib()
+    channels = attr.attrib()
+    sample_rate = attr.attrib()
 
 
 def single_item(tags):
