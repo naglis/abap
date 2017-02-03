@@ -40,8 +40,18 @@ def format_duration(seconds: int) -> str:
     return f'{hours:02.0f}:{minutes:02.0f}:{seconds:02.0f}'
 
 
-def parse_duration(s):
-    h, m, s = map(int, s.split(':'))
+def parse_duration(s: str) -> int:
+    if not s:
+        return 0
+    n = s.count(':')
+    if n == 2:
+        h, m, s = map(int, s.split(':'))
+    elif n == 1:
+        h, m, s = 0, *map(int, s.split(':'))
+    elif n == 0:
+        h, m, s = 0, 0, int(s)
+    else:
+        raise ValueError('Unsupported format')
     return ((h * 60) + m) * 60 + s
 
 
