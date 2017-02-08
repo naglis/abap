@@ -1,7 +1,7 @@
-
 RFC822 = '%a, %d %b %Y %H:%M:%S +0000'
 ITUNES_NS = 'http://www.itunes.com/dtds/podcast-1.0.dtd'
 ATOM_NS = 'http://www.w3.org/2005/Atom'
+DEFAULT_LANG_CODE = 'en-us'
 
 IMAGE_EXTENSIONS = ('jpg', 'jpeg', 'png')
 AUDIO_EXTENSIONS = ('mp3', 'ogg', 'm4a', 'm4b', 'opus')

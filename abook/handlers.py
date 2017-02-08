@@ -76,8 +76,9 @@ class RSSHandler(tornado.web.RequestHandler):
 
         ET.SubElement(channel, 'title').text = bundle.title
         ET.SubElement(channel, 'link').text = base_url
-        # ET.SubElement(channel, 'description').text = audiobook.summary
-        ET.SubElement(channel, 'language').text = 'en-us'
+        if bundle.description:
+            ET.SubElement(channel, 'description').text = bundle.description
+        ET.SubElement(channel, 'language').text = bundle.lang
         ET.SubElement(channel, 'ttl').text = str(const.TTL)
         '''
         ET.SubElement(channel, 'lastBuildDate').text = time.strftime(
@@ -110,10 +111,10 @@ class RSSHandler(tornado.web.RequestHandler):
                 item, utils.ns(const.ITUNES_NS, 'duration')
             ).text = str(a.duration)
 
-            '''
-            ET.SubElement(item, ns(ITUNES_NS, 'explicit')).text = (
-                'Yes' if i.explicit else 'No')
+            ET.SubElement(item, utils.ns(const.ITUNES_NS, 'explicit')).text = (
+                'Yes' if a.explicit else 'No')
 
+            '''
             if i.subtitle:
                 ET.SubElement(
                     channel, ns(ITUNES_NS, 'subtitle')).text = i.subtitle
@@ -136,4 +137,3 @@ class RSSHandler(tornado.web.RequestHandler):
         self.write(xml.dom.minidom.parseString(
             ET.tostring(rss, encoding='utf-8')).toprettyxml(),
         )
-

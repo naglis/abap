@@ -10,7 +10,7 @@ import attr
 import tornado.ioloop
 import yaml
 
-from abook import app, scan, tagutils, utils
+from abook import app, const, scan, tagutils, utils
 
 mimetypes.add_type('audio/x-m4b', '.m4b')
 
@@ -18,7 +18,13 @@ LOG = logging.getLogger(__name__)
 
 
 def non_negative(instance, attribute, value):
-    return value >= 0
+    if not value >= 0:
+        raise ValueError(f'{attribute.name} must be non-negative')
+
+
+def lang_code(instance, attribute, value):
+    if not utils.validate_lang_code(value):
+        raise ValueError(f'{attribute.name} contains invalid language code')
 
 
 def is_cover(artifact):
@@ -42,6 +48,26 @@ class Duration(object):
     @classmethod
     def from_string(cls, s):
         return cls(utils.parse_duration(s))
+
+
+@attr.attrs(frozen=True)
+class Chapter(object):
+    name = attr.attrib()
+    start = attr.attrib()
+    end = attr.attrib(default=Duration(0))
+
+    @classmethod
+    def from_dict(cls, d: dict):
+        start = Duration.from_string(d['start'])
+        end = Duration.from_string(d.get('end', '0'))
+        return cls(d['name'], start, end)
+
+    def as_dict(self) -> dict:
+        return {
+            'name': self.name,
+            'start': str(self.start),
+            'end': str(self.end),
+        }
 
 
 @attr.attrs
@@ -107,6 +133,8 @@ class Audiofile(Filelike):
     author = attr.attrib()
     title = attr.attrib()
     duration = attr.attrib(default=0)
+    explicit = attr.attrib(default=False)
+    chapters = attr.attrib(default=attr.Factory(list), repr=False)
 
     @classmethod
     def from_dict(cls, d: dict):
@@ -116,6 +144,7 @@ class Audiofile(Filelike):
             d.get('author'),
             d.get('title'),
             duration=duration,
+            chapters=[Chapter.from_dict(cd) for cd in d.get('chapters', [])],
         )
 
     def as_dict(self) -> dict:
@@ -124,6 +153,8 @@ class Audiofile(Filelike):
             'title': self.title,
             'author': self.author,
             'duration': str(self.duration),
+            'explicit': self.explicit,
+            'chapters': [c.as_dict() for c in self.chapters],
         })
         return d
 
@@ -134,6 +165,12 @@ class Abook(collections.abc.Sequence):
     _filename = attr.attrib(convert=pathlib.Path)
     authors = attr.attrib()
     title = attr.attrib()
+    slug = attr.attrib()
+    description = attr.attrib(default=None)
+    lang = attr.attrib(
+        validator=lang_code,
+        default=const.DEFAULT_LANG_CODE,
+    )
     _audiofiles = attr.attrib(default=attr.Factory(list), repr=False)
     artifacts = attr.attrib(default=attr.Factory(list), repr=False)
 
@@ -146,10 +183,6 @@ class Abook(collections.abc.Sequence):
     @property
     def path(self):
         return self._filename.parent
-
-    @property
-    def slug(self):
-        return self._filename.stem
 
     @property
     def has_cover(self):
@@ -173,6 +206,9 @@ class Abook(collections.abc.Sequence):
             filename,
             d.get('authors', []),
             d.get('title'),
+            d.get('slug'),
+            description=d.get('description') or '',
+            lang=d.get('lang', const.DEFAULT_LANG_CODE),
             audiofiles=[
                 Audiofile.from_dict(ad) for ad in d.get('audiofiles', [])
             ],
@@ -184,8 +220,11 @@ class Abook(collections.abc.Sequence):
     def as_dict(self) -> dict:
         return {
             'version': Abook.VERSION,
-            'title': self.title,
             'authors': self.authors,
+            'title': self.title,
+            'slug': self.slug,
+            'description': self.description or '',
+            'lang': self.lang,
             'audiofiles': [
                 af.as_dict() for af in self
             ],
@@ -242,6 +281,7 @@ def do_init(args):
         args.directory,
         list(authors.keys()),
         album,
+        utils.slugify(album),
         audiofiles=audiofiles,
         artifacts=artifacts,
     )
@@ -254,33 +294,37 @@ def do_init(args):
 
 def do_transcode(args):
     data = yaml.load(args.abook_file)
-    book = Abook.from_dict(data)
+    book = Abook.from_dict(
+        os.path.abspath(args.abook_file.name), data)
 
-    cover_filename = None
-    for image in book.image_files:
-        if image.image_type == 'cover':
-            cover_filename = os.path.join(
-                book.path, image.path
-            )
+    output_dir = pathlib.Path(os.path.abspath(args.output_dir))
 
-    for af in book.audio_files:
-        filename = os.path.join(book.path, af.path)
-        basename = os.path.basename(af.path)
-        output_filename = os.path.join(
-            args.output_dir,
-            utils.switch_ext(basename, 'opus'),
-        )
-        tags = tagutils.get_tags(filename)
+    if not book.has_cover:
+        cover_filename = None
+    else:
+        cover_filename = book.path / utils.first_of(book.covers).path
 
+    for af in book:
+        filename = book.path / af.path
+        output_filename = (output_dir / af.path).with_suffix('.opus')
+        tags = tagutils.get_tags(str(filename))
         LOG.info(f'Transcoding: {af.path} to: {output_filename}...')
         lame = subprocess.Popen([
             'lame',
             '--quiet',
             '--decode',
             '--mp3input',
-            filename,
+            str(filename),
             '-'
         ], stdout=subprocess.PIPE)
+        chapter_comments = []
+        for i, chapter in enumerate(af.chapters):
+            chapter_comments.extend([
+                '--comment',
+                f'CHAPTER{i:03d}={chapter.start!s}.000',
+                '--comment',
+                f'CHAPTER{i:03d}NAME={chapter.name}',
+            ])
         opusenc_args = [
             'opusenc',
             '--quiet',
@@ -294,7 +338,8 @@ def do_transcode(args):
             '--max-delay',
             str(args.max_delay),
             '--artist',
-            af.artist if af.artist else ', '.join(book.authors),
+            af.author if af.author else ', '.join(book.authors),
+            *chapter_comments,
             '--album',
             book.title,
             '--title',
@@ -305,7 +350,7 @@ def do_transcode(args):
         if cover_filename:
             opusenc_args.extend([
                 '--picture',
-                f'3||Front Cover||{cover_filename}',
+                f'3||Front Cover||{cover_filename!s}',
             ])
         opusenc = subprocess.Popen(opusenc_args, stdin=lame.stdout)
         lame.stdout.close()

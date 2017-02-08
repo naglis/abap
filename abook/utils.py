@@ -1,11 +1,13 @@
 import operator
 import os
 import re
+import string
 
 from abook import const
 
 first_of, second_of = map(operator.itemgetter, range(2))
 by_sequence = operator.attrgetter('sequence')
+alphanumeric = frozenset(string.ascii_letters + string.digits)
 
 
 def make_regex_filename_matcher(filenames=None, extensions=None):
@@ -61,3 +63,15 @@ def switch_ext(filename: str, new_ext: str) -> str:
         *os.path.splitext(filename),
         new_ext=new_ext,
     )
+
+
+def validate_lang_code(lang_code: str) -> bool:
+    '''
+    Based on: https://www.w3.org/TR/REC-html40/struct/dirlang.html#langcodes
+    '''
+    pattern = re.compile(r'^[A-Za-z]+(?:-[A-Za-z]+)*$')
+    return pattern.match(lang_code) is not None
+
+
+def slugify(s):
+    return (''.join((c if c in alphanumeric else '_') for c in s)).strip('_')
