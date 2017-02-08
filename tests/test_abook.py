@@ -32,3 +32,16 @@ class TestUtils(unittest.TestCase):
             else:
                 actual = utils.parse_duration(s)
                 self.assertEqual(actual, expected)
+
+    def test_validate_lang_code(self):
+        test_cases = [
+            ('en', True),
+            ('en-US', True),
+            ('en-cockney', True),
+            ('i-navajo', True),
+            ('x-klingon', True),
+            ('Foo,bar', False),
+        ]
+        for lang_code, expected in test_cases:
+            actual = utils.validate_lang_code(lang_code)
+            self.assertEqual(actual, expected)
