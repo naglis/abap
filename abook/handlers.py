@@ -33,7 +33,7 @@ class CoverHandler(tornado.web.StaticFileHandler):
     def get(self, slug):
         bundle = self.application.bundle
         if not (bundle.slug == slug and bundle.has_cover):
-            raise tornado.web.HTTPError(404)
+            raise tornado.web.HTTPError(status_code=404)
         else:
             cover = utils.first_of(bundle.covers)
         self.set_header('Content-Type', cover.mimetype)
@@ -45,7 +45,7 @@ class FanartHandler(tornado.web.StaticFileHandler):
     def get(self, slug):
         bundle = self.application.bundle
         if not (bundle.slug == slug and bundle.has_fanart):
-            raise tornado.web.HTTPError(404)
+            raise tornado.web.HTTPError(status_code=404)
         else:
             fanart = utils.first_of(bundle.fanarts)
         self.set_header('Content-Type', fanart.mimetype)
