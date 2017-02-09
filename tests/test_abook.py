@@ -1,6 +1,7 @@
 import unittest
 
 from abook import utils
+from abook.main import Duration
 
 
 class TestUtils(unittest.TestCase):
@@ -45,3 +46,25 @@ class TestUtils(unittest.TestCase):
         for lang_code, expected in test_cases:
             actual = utils.validate_lang_code(lang_code)
             self.assertEqual(actual, expected)
+
+
+class TestDuration(unittest.TestCase):
+
+    def test_from_string(self):
+        test_cases = [
+            ('00:00:01', 1),
+            ('00:01:01', 61),
+        ]
+        for s, expected in test_cases:
+            d = Duration.from_string(s)
+            self.assertEqual(d.duration, expected)
+
+    def test_format(self):
+        test_cases = [
+            (1, '{d:h:m:s}', '00:00:01'),
+            (61, '{d:h:m:s}', '00:01:01'),
+            (61, '{d:h:m:s.ms}', '00:01:01.000'),
+        ]
+        for duration, fmt, expected in test_cases:
+            d = Duration(duration)
+            self.assertEqual(fmt.format(d=d), expected)

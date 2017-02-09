@@ -49,6 +49,17 @@ class Duration(object):
     def from_string(cls, s):
         return cls(utils.parse_duration(s))
 
+    def _split(self):
+        minutes, seconds = divmod(self.duration, 60)
+        hours, minutes = divmod(minutes, 60)
+        return hours, minutes, seconds
+
+    def __format__(self, format):
+        h, m, s = self._split()
+        if format == 'h:m:s.ms':
+            return f'{h:02d}:{m:02d}:{s:02d}.000'
+        return f'{h:02d}:{m:02d}:{s:02d}'
+
 
 @attr.attrs(frozen=True)
 class Chapter(object):
@@ -321,7 +332,7 @@ def do_transcode(args):
         for i, chapter in enumerate(af.chapters):
             chapter_comments.extend([
                 '--comment',
-                f'CHAPTER{i:03d}={chapter.start!s}.000',
+                f'CHAPTER{i:03d}={chapter.start:hh:mm:ss.ms}',
                 '--comment',
                 f'CHAPTER{i:03d}NAME={chapter.name}',
             ])
