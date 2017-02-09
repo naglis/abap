@@ -9,6 +9,16 @@ import tornado.web
 from abook import const, utils
 
 
+def render_chapter(chapter):
+    return ET.Element(
+        utils.ns(const.PSC_NS, 'chapter'),
+        attrib={
+            'title': chapter.name,
+            'start': f'{chapter.start!s}',
+        },
+    )
+
+
 class StreamHandler(tornado.web.StaticFileHandler):
 
     def head(self, slug, sequence, ext):
@@ -138,7 +148,7 @@ class RSSHandler(tornado.web.RequestHandler):
             })
 
             if a.chapters:
-                cselem = ET.SubElement(
+                chapters_elem = ET.SubElement(
                     item,
                     utils.ns(const.PSC_NS, 'chapters'),
                     attrib={
@@ -146,14 +156,7 @@ class RSSHandler(tornado.web.RequestHandler):
                     }
                 )
                 for c in a.chapters:
-                    ET.SubElement(
-                        cselem,
-                        utils.ns(const.PSC_NS, 'chapter'),
-                        attrib={
-                            'title': c.name,
-                            'start': str(c.start),
-                        },
-                    )
+                    chapters_elem.append(render_chapter(c))
 
         self.write(xml.dom.minidom.parseString(
             ET.tostring(rss, encoding='utf-8')).toprettyxml(),
