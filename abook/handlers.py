@@ -68,10 +68,10 @@ class RSSHandler(tornado.web.RequestHandler):
         fanart_url = urllib.parse.urljoin(
             base_url, self.reverse_url('fanart', bundle.slug))
 
-        ET.register_namespace('itunes', const.ITUNES_NS)
-        ET.register_namespace('atom', const.ATOM_NS)
+        for ns_name, ns_url in const.NAMESPACES.items():
+            ET.register_namespace(ns_name, ns_url)
 
-        rss = ET.Element('rss', attrib={'version': '2.0'})
+        rss = ET.Element('rss', attrib={'version': const.RSS_VERSION})
         channel = ET.SubElement(rss, 'channel')
 
         ET.SubElement(channel, 'title').text = bundle.title
@@ -84,11 +84,16 @@ class RSSHandler(tornado.web.RequestHandler):
         ET.SubElement(channel, 'lastBuildDate').text = time.strftime(
             RFC822, audiobook.pub_date.timetuple())
         '''
-        ET.SubElement(channel, utils.ns(const.ATOM_NS, 'icon')).text = cover_url
-        ET.SubElement(channel, utils.ns(const.ATOM_NS, 'logo')).text = fanart_url
-        ET.SubElement(channel, utils.ns(const.ITUNES_NS, 'author')).text = ', '.join(bundle.authors)
         ET.SubElement(
-            channel, utils.ns(const.ITUNES_NS, 'image'), attrib={'href': cover_url})
+            channel, utils.ns(const.ATOM_NS, 'icon')).text = cover_url
+        ET.SubElement(
+            channel, utils.ns(const.ATOM_NS, 'logo')).text = fanart_url
+        ET.SubElement(
+            channel, utils.ns(const.ITUNES_NS, 'author')).text = ', '.join(
+                bundle.authors)
+        ET.SubElement(
+            channel, utils.ns(const.ITUNES_NS, 'image'), attrib={
+                'href': cover_url})
 
         image = ET.SubElement(channel, 'image')
         ET.SubElement(image, 'url').text = cover_url
@@ -133,6 +138,24 @@ class RSSHandler(tornado.web.RequestHandler):
                         'stream', bundle.slug, str(idx), a.ext),
                 ),
             })
+
+            if a.chapters:
+                cselem = ET.SubElement(
+                    item,
+                    utils.ns(const.PSC_NS, 'chapters'),
+                    attrib={
+                        'version': const.PSC_VERSION,
+                    }
+                )
+                for c in a.chapters:
+                    ET.SubElement(
+                        cselem,
+                        utils.ns(const.PSC_NS, 'chapter'),
+                        attrib={
+                            'title': c.name,
+                            'start': str(c.start),
+                        },
+                    )
 
         self.write(xml.dom.minidom.parseString(
             ET.tostring(rss, encoding='utf-8')).toprettyxml(),
