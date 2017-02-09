@@ -1,5 +1,4 @@
 import datetime
-import os
 import time
 import urllib.parse
 import xml.dom.minidom
