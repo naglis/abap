@@ -3,7 +3,7 @@ import os
 import re
 import string
 
-from abook import const
+from abap import const
 
 first_of, second_of = map(operator.itemgetter, range(2))
 by_sequence = operator.attrgetter('sequence')

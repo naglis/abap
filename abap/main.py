@@ -10,7 +10,7 @@ import attr
 import tornado.ioloop
 import yaml
 
-from abook import app, const, scan, tagutils, utils
+from abap import app, const, scan, tagutils, utils
 
 mimetypes.add_type('audio/x-m4b', '.m4b')
 

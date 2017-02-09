@@ -6,7 +6,7 @@ import xml.etree.cElementTree as ET
 
 import tornado.web
 
-from abook import const, utils
+from abap import const, utils
 
 
 def render_chapter(chapter):

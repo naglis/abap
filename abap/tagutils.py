@@ -1,7 +1,7 @@
 import attr
 import mutagen
 
-from abook import utils
+from abap import utils
 
 
 @attr.attrs(frozen=True)

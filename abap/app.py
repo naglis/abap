@@ -1,10 +1,10 @@
 import tornado.web
 
-from abook import handlers
+from abap import handlers
 
 
 def make_app(bundle):
-    abook_app = tornado.web.Application([
+    abap_app = tornado.web.Application([
         tornado.web.URLSpec(
             r'/(?P<slug>\w+)',
             handlers.RSSHandler,
@@ -29,5 +29,5 @@ def make_app(bundle):
             name='fanart',
         ),
     ])
-    abook_app.bundle = bundle
-    return abook_app
+    abap_app.bundle = bundle
+    return abap_app

@@ -1,7 +1,7 @@
 import unittest
 
-from abook import utils
-from abook.main import Duration
+from abap import utils
+from abap.main import Duration
 
 
 class TestUtils(unittest.TestCase):
