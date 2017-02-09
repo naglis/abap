@@ -131,8 +131,7 @@ class RSSHandler(tornado.web.RequestHandler):
 
             ET.SubElement(item, 'enclosure', attrib={
                 'type': a.mimetype,
-                'length': str(
-                    os.path.getsize(os.path.join(bundle.path, a.path))),
+                'length': str((bundle.path / a.path).stat().st_size),
                 'url': urllib.parse.urljoin(
                     base_url, self.reverse_url(
                         'stream', bundle.slug, str(idx), a.ext),
