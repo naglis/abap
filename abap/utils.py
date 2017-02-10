@@ -63,13 +63,6 @@ def parse_duration(s: str) -> int:
     return (((h * 60) + m) * 60 + s) * 1000 + ms
 
 
-def switch_ext(filename: str, new_ext: str) -> str:
-    return '{0}.{new_ext}'.format(
-        *os.path.splitext(filename),
-        new_ext=new_ext,
-    )
-
-
 def validate_lang_code(lang_code: str) -> bool:
     '''
     Based on: https://www.w3.org/TR/REC-html40/struct/dirlang.html#langcodes

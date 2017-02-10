@@ -6,15 +6,6 @@ from abap.abook import Duration
 
 class TestUtils(unittest.TestCase):
 
-    def test_switch_ext(self):
-        test_cases = [
-            ('a.jpg', 'png', 'a.png'),
-            ('/home/test/a.jpg', 'png', '/home/test/a.png'),
-        ]
-        for fn, new_ext, expected in test_cases:
-            actual = utils.switch_ext(fn, new_ext)
-            self.assertEqual(expected, actual)
-
     def test_parse_duration(self):
         test_cases = [
             ('1:12', None, 72000),
