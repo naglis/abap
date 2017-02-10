@@ -8,10 +8,14 @@ import tornado.web
 
 from abap import __version__, const, utils
 
+atom = utils.make_ns_getter(const.ATOM_NS)
+itunes = utils.make_ns_getter(const.ITUNES_NS)
+psc = utils.make_ns_getter(const.PSC_NS)
+
 
 def render_chapter(chapter):
     return ET.Element(
-        utils.ns(const.PSC_NS, 'chapter'),
+        psc('chapter'),
         attrib={
             'title': chapter.name,
             'start': f'{chapter.start!s}',
@@ -38,21 +42,19 @@ class AbookRSSRenderer(object):
             const.RFC822,
             (when - datetime.timedelta(seconds=sequence)).timetuple()
         )
-        ET.SubElement(
-            item, utils.ns(const.ITUNES_NS, 'duration')
-        ).text = f'{audiofile.duration}'
+        ET.SubElement(item, itunes('duration')).text = f'{audiofile.duration}'
 
-        ET.SubElement(item, utils.ns(const.ITUNES_NS, 'explicit')).text = (
+        ET.SubElement(item, itunes('explicit')).text = (
             'Yes' if audiofile.explicit else 'No')
 
         '''
         if i.subtitle:
             ET.SubElement(
-                channel, ns(ITUNES_NS, 'subtitle')).text = i.subtitle
+                channel, itunes('subtitle')).text = i.subtitle
 
         if i.summary:
             ET.SubElement(
-                channel, ns(ITUNES_NS, 'summary')).text = i.summary
+                channel, itunes('summary')).text = i.summary
         '''
 
         ET.SubElement(item, 'enclosure', attrib={
@@ -67,7 +69,7 @@ class AbookRSSRenderer(object):
         if audiofile.chapters:
             chapters_elem = ET.SubElement(
                 item,
-                utils.ns(const.PSC_NS, 'chapters'),
+                psc('chapters'),
                 attrib={
                     'version': const.PSC_VERSION,
                 }
@@ -99,16 +101,11 @@ class AbookRSSRenderer(object):
         ET.SubElement(channel, 'lastBuildDate').text = time.strftime(
             RFC822, audiobook.pub_date.timetuple())
         '''
-        ET.SubElement(
-            channel, utils.ns(const.ATOM_NS, 'icon')).text = cover_url
-        ET.SubElement(
-            channel, utils.ns(const.ATOM_NS, 'logo')).text = fanart_url
-        ET.SubElement(
-            channel, utils.ns(const.ITUNES_NS, 'author')).text = ', '.join(
-                self.abook.authors)
-        ET.SubElement(
-            channel, utils.ns(const.ITUNES_NS, 'image'), attrib={
-                'href': cover_url})
+        ET.SubElement(channel, atom('icon')).text = cover_url
+        ET.SubElement(channel, atom('logo')).text = fanart_url
+        ET.SubElement(channel, itunes('author')).text = ', '.join(
+            self.abook.authors)
+        ET.SubElement(channel, itunes('image'), attrib={'href': cover_url})
 
         image = ET.SubElement(channel, 'image')
         ET.SubElement(image, 'url').text = cover_url

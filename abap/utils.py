@@ -31,9 +31,13 @@ fanart_matcher = make_regex_filename_matcher(
     filenames=const.FANART_FILENAMES, extensions=const.IMAGE_EXTENSIONS)
 
 
-def ns(namespace: str, elem: str) -> str:
-    '''Returns element name with namespace.'''
-    return f'{{{namespace}}}{elem}'
+def make_ns_getter(namespace: str):
+
+    def getter(elem: str) -> str:
+        '''Returns element name with namespace.'''
+        return f'{{{namespace}}}{elem}'
+
+    return getter
 
 
 def format_duration(seconds: int) -> str:
