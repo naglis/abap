@@ -11,6 +11,7 @@ setup(
     install_requires=[
         'PyYAML>=3.12,<3.20',
         'attrs>=16.3.0,<17.0.0',
+        'jsonschema>=2.6.0,<3.0.0',
         'mutagen>=1.36.0,<1.37.0',
         'tornado>=4.4.0,<4.5.0',
     ],

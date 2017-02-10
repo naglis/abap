@@ -17,5 +17,7 @@ COVER_FILENAMES = (r'cover', r'folder', r'cover[\s_-]?art')
 FANART_FILENAMES = (r'fan[\s_-]?art',)
 IGNORE_FILENAME = b'.ausis_ignore'
 
+DURATION_RE = r'^([0-9]{2,}):([0-5][0-9]):([0-5][0-9])(\.([0-9]{3}))?$'
+
 # Our default time-to-live of RSS feeds (in minutes).
 TTL = 60 * 24 * 365

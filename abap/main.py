@@ -7,7 +7,6 @@ import pathlib
 import subprocess
 
 import tornado.ioloop
-import yaml
 
 from abap import abook, app, scan, tagutils, utils
 
@@ -69,13 +68,11 @@ def do_init(args):
     )
 
     with open(os.path.join(args.directory, args.output), 'w') as f:
-        yaml.dump(
-            bundle.as_dict(), f,
-            default_flow_style=False, indent=2, width=79)
+        abook.dump(bundle, f)
 
 
 def do_transcode(args):
-    data = yaml.load(args.abook_file)
+    data = abook.load(args.abook_file)
     book = abook.Abook.from_dict(
         os.path.abspath(args.abook_file.name), data)
 
@@ -140,7 +137,7 @@ def do_transcode(args):
 
 
 def do_serve(args):
-    d = yaml.load(args.abook_file)
+    d = abook.load(args.abook_file)
     bundle = abook.Abook.from_dict(
         os.path.abspath(args.abook_file.name), d)
     bapp = app.make_app(bundle)

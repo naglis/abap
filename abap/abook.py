@@ -3,8 +3,147 @@ import mimetypes
 import pathlib
 
 import attr
+import jsonschema
+import yaml
 
 from abap import const, utils
+
+
+chapter_schema = {
+    'type': 'object',
+    'properties': {
+        'name': {
+            'type': 'string',
+        },
+        'start': {
+            'type': 'string',
+            'pattern': const.DURATION_RE,
+        },
+        'end': {
+            'type': 'string',
+            'pattern': const.DURATION_RE,
+        },
+    },
+    'required': [
+        'name',
+        'start',
+    ]
+}
+
+audiofile_schema = {
+    'type': 'object',
+    'properties': {
+        'path': {
+            'type': 'string',
+        },
+        'size': {
+            'type': 'number',
+            'multipleOf': 1,
+        },
+        'author': {
+            'type': 'string',
+        },
+        'title': {
+            'type': 'string',
+        },
+        'explicit': {
+            'type': 'boolean',
+        },
+        'duration': {
+            'type': 'string',
+            'pattern': const.DURATION_RE,
+        },
+        'chapters': {
+            'type': 'array',
+            'items': chapter_schema,
+        }
+    },
+    'required': [
+        'title',
+        'author',
+        'path',
+    ],
+}
+artifact_schema = {
+    'type': 'object',
+    'properties': {
+        'path': {
+            'type': 'string',
+        },
+        'size': {
+            'type': 'number',
+            'multipleOf': 1,
+        },
+        'description': {
+            'type': 'string',
+        },
+        'type': {
+            'enum': [
+                'cover',
+                'fanart',
+                'image',
+                'other',
+            ],
+            'default': 'other',
+        },
+    },
+    'required': [
+        'path',
+        'description',
+        'type',
+    ],
+}
+abook_schema = {
+    'type': 'object',
+    'properties': {
+        'authors': {
+            'type': 'array',
+            'minItems': 1,
+            'uniqueItems': True,
+            'items': {
+                'type': 'string',
+            },
+        },
+        'title': {
+            'type': 'string',
+        },
+        'slug': {
+            'type': 'string',
+        },
+        'description': {
+            'type': 'string',
+        },
+        'lang': {
+            'type': 'string',
+            'default': const.DEFAULT_LANG_CODE,
+        },
+        'audiofiles': {
+            'type': 'array',
+            'items': audiofile_schema,
+        },
+        'artifacts': {
+            'type': 'array',
+            'items': artifact_schema,
+        },
+    },
+    'required': [
+        'title',
+        'slug',
+    ],
+}
+
+
+def load(fobj):
+    data = yaml.load(fobj)
+    jsonschema.validate(data, abook_schema)
+    return data
+
+
+def dump(abook, fobj):
+    yaml.dump(
+        abook.as_dict(), fobj,
+        default_flow_style=False, indent=2, width=79
+    )
 
 
 def non_negative(instance, attribute, value):
