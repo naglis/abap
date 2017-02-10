@@ -19,6 +19,115 @@ def render_chapter(chapter):
     )
 
 
+class AbookRSSRenderer(object):
+
+    def __init__(self, abook, base_url, url_reverse_func=lambda n, *a: n):
+        self.abook = abook
+        self.base_url = base_url
+        self.reverse_url = url_reverse_func
+
+    def render_audiofile(self, audiofile, sequence=0,
+                         when=datetime.datetime.now()):
+        item = ET.Element('item')
+
+        ET.SubElement(item, 'title').text = audiofile.title
+        ET.SubElement(
+            item, 'guid', attrib={'isPermaLink': 'false'}
+        ).text = f'{sequence}'
+        ET.SubElement(item, 'pubDate').text = time.strftime(
+            const.RFC822,
+            (when - datetime.timedelta(seconds=sequence)).timetuple()
+        )
+        ET.SubElement(
+            item, utils.ns(const.ITUNES_NS, 'duration')
+        ).text = f'{audiofile.duration}'
+
+        ET.SubElement(item, utils.ns(const.ITUNES_NS, 'explicit')).text = (
+            'Yes' if audiofile.explicit else 'No')
+
+        '''
+        if i.subtitle:
+            ET.SubElement(
+                channel, ns(ITUNES_NS, 'subtitle')).text = i.subtitle
+
+        if i.summary:
+            ET.SubElement(
+                channel, ns(ITUNES_NS, 'summary')).text = i.summary
+        '''
+
+        ET.SubElement(item, 'enclosure', attrib={
+            'type': audiofile.mimetype,
+            'length': str((self.abook.path / audiofile.path).stat().st_size),
+            'url': urllib.parse.urljoin(
+                self.base_url, self.reverse_url(
+                    'stream', self.abook.slug, f'{sequence}', audiofile.ext),
+            ),
+        })
+
+        if audiofile.chapters:
+            chapters_elem = ET.SubElement(
+                item,
+                utils.ns(const.PSC_NS, 'chapters'),
+                attrib={
+                    'version': const.PSC_VERSION,
+                }
+            )
+            for c in audiofile.chapters:
+                chapters_elem.append(render_chapter(c))
+        return item
+
+    def render(self):
+        cover_url = urllib.parse.urljoin(
+            self.base_url, self.reverse_url('cover', self.abook.slug))
+        fanart_url = urllib.parse.urljoin(
+            self.base_url, self.reverse_url('fanart', self.abook.slug))
+
+        for ns_name, ns_url in const.NAMESPACES.items():
+            ET.register_namespace(ns_name, ns_url)
+
+        rss = ET.Element('rss', attrib={'version': const.RSS_VERSION})
+        channel = ET.SubElement(rss, 'channel')
+
+        ET.SubElement(channel, 'title').text = self.abook.title
+        ET.SubElement(channel, 'link').text = self.base_url
+        if self.abook.description:
+            ET.SubElement(channel, 'description').text = self.abook.description
+        ET.SubElement(channel, 'language').text = self.abook.lang
+        ET.SubElement(channel, 'ttl').text = f'{const.TTL}'
+        '''
+        ET.SubElement(channel, 'lastBuildDate').text = time.strftime(
+            RFC822, audiobook.pub_date.timetuple())
+        '''
+        ET.SubElement(
+            channel, utils.ns(const.ATOM_NS, 'icon')).text = cover_url
+        ET.SubElement(
+            channel, utils.ns(const.ATOM_NS, 'logo')).text = fanart_url
+        ET.SubElement(
+            channel, utils.ns(const.ITUNES_NS, 'author')).text = ', '.join(
+                self.abook.authors)
+        ET.SubElement(
+            channel, utils.ns(const.ITUNES_NS, 'image'), attrib={
+                'href': cover_url})
+
+        image = ET.SubElement(channel, 'image')
+        ET.SubElement(image, 'url').text = cover_url
+        ET.SubElement(image, 'title').text = self.abook.title
+        ET.SubElement(image, 'link').text = self.base_url
+
+        now = datetime.datetime.now()
+        for idx, audiofile in enumerate(self.abook):
+            channel.append(
+                self.render_audiofile(audiofile, sequence=idx, when=now)
+            )
+
+        return rss
+
+    def dumps(self):
+        rss = self.render()
+        return xml.dom.minidom.parseString(
+            ET.tostring(rss, encoding='utf-8')).toprettyxml()
+
+
 class StreamHandler(tornado.web.StaticFileHandler):
 
     def head(self, slug, sequence, ext):
@@ -72,92 +181,9 @@ class RSSHandler(tornado.web.RequestHandler):
         self.set_header('Content-Type', 'application/rss+xml; charset="utf-8"')
 
         base_url = f'{self.request.protocol}://{self.request.host}'
-        cover_url = urllib.parse.urljoin(
-            base_url, self.reverse_url('cover', bundle.slug))
-        fanart_url = urllib.parse.urljoin(
-            base_url, self.reverse_url('fanart', bundle.slug))
-
-        for ns_name, ns_url in const.NAMESPACES.items():
-            ET.register_namespace(ns_name, ns_url)
-
-        rss = ET.Element('rss', attrib={'version': const.RSS_VERSION})
-        channel = ET.SubElement(rss, 'channel')
-
-        ET.SubElement(channel, 'title').text = bundle.title
-        ET.SubElement(channel, 'link').text = base_url
-        if bundle.description:
-            ET.SubElement(channel, 'description').text = bundle.description
-        ET.SubElement(channel, 'language').text = bundle.lang
-        ET.SubElement(channel, 'ttl').text = str(const.TTL)
-        '''
-        ET.SubElement(channel, 'lastBuildDate').text = time.strftime(
-            RFC822, audiobook.pub_date.timetuple())
-        '''
-        ET.SubElement(
-            channel, utils.ns(const.ATOM_NS, 'icon')).text = cover_url
-        ET.SubElement(
-            channel, utils.ns(const.ATOM_NS, 'logo')).text = fanart_url
-        ET.SubElement(
-            channel, utils.ns(const.ITUNES_NS, 'author')).text = ', '.join(
-                bundle.authors)
-        ET.SubElement(
-            channel, utils.ns(const.ITUNES_NS, 'image'), attrib={
-                'href': cover_url})
-
-        image = ET.SubElement(channel, 'image')
-        ET.SubElement(image, 'url').text = cover_url
-        ET.SubElement(image, 'title').text = bundle.title
-        ET.SubElement(image, 'link').text = base_url
-
-        now = datetime.datetime.now()
-        for idx, a in enumerate(bundle):
-            item = ET.SubElement(channel, 'item')
-
-            ET.SubElement(item, 'title').text = a.title
-            ET.SubElement(
-                item, 'guid', attrib={'isPermaLink': 'false'}
-            ).text = str(idx)
-            ET.SubElement(item, 'pubDate').text = time.strftime(
-                const.RFC822,
-                (now - datetime.timedelta(seconds=idx)).timetuple()
-            )
-            ET.SubElement(
-                item, utils.ns(const.ITUNES_NS, 'duration')
-            ).text = str(a.duration)
-
-            ET.SubElement(item, utils.ns(const.ITUNES_NS, 'explicit')).text = (
-                'Yes' if a.explicit else 'No')
-
-            '''
-            if i.subtitle:
-                ET.SubElement(
-                    channel, ns(ITUNES_NS, 'subtitle')).text = i.subtitle
-
-            if i.summary:
-                ET.SubElement(
-                    channel, ns(ITUNES_NS, 'summary')).text = i.summary
-            '''
-
-            ET.SubElement(item, 'enclosure', attrib={
-                'type': a.mimetype,
-                'length': str((bundle.path / a.path).stat().st_size),
-                'url': urllib.parse.urljoin(
-                    base_url, self.reverse_url(
-                        'stream', bundle.slug, str(idx), a.ext),
-                ),
-            })
-
-            if a.chapters:
-                chapters_elem = ET.SubElement(
-                    item,
-                    utils.ns(const.PSC_NS, 'chapters'),
-                    attrib={
-                        'version': const.PSC_VERSION,
-                    }
-                )
-                for c in a.chapters:
-                    chapters_elem.append(render_chapter(c))
-
-        self.write(xml.dom.minidom.parseString(
-            ET.tostring(rss, encoding='utf-8')).toprettyxml(),
+        renderer = AbookRSSRenderer(
+            bundle,
+            base_url,
+            url_reverse_func=self.reverse_url,
         )
+        self.write(renderer.dumps())
