@@ -46,6 +46,11 @@ def format_duration(seconds: int) -> str:
 def parse_duration(s: str) -> int:
     if not s:
         return 0
+    if '.' in s:
+        ms = int(s[-3:])
+        s = s[:-4]
+    else:
+        ms = 0
     n = s.count(':')
     if n == 2:
         h, m, s = map(int, s.split(':'))
@@ -55,7 +60,7 @@ def parse_duration(s: str) -> int:
         h, m, s = 0, 0, int(s)
     else:
         raise ValueError('Unsupported format')
-    return ((h * 60) + m) * 60 + s
+    return (((h * 60) + m) * 60 + s) * 1000 + ms
 
 
 def switch_ext(filename: str, new_ext: str) -> str:

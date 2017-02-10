@@ -17,9 +17,11 @@ class TestUtils(unittest.TestCase):
 
     def test_parse_duration(self):
         test_cases = [
-            ('1:12', None, 72),
-            ('12', None, 12),
-            ('1:12:13', None, 4333),
+            ('1:12', None, 72000),
+            ('12', None, 12000),
+            ('1:12:13', None, 4333000),
+            ('1:12:13.123', None, 4333123),
+            ('1:12:13,123', ValueError, None),
             ('1:1:12:13', ValueError, None),
             ('1:a:13', ValueError, None),
             ('a', ValueError, None),
@@ -52,8 +54,9 @@ class TestDuration(unittest.TestCase):
 
     def test_from_string(self):
         test_cases = [
-            ('00:00:01', 1),
-            ('00:01:01', 61),
+            ('00:00:01', 1000),
+            ('00:01:01', 61000),
+            ('00:01:01.001', 61001),
         ]
         for s, expected in test_cases:
             d = Duration.from_string(s)

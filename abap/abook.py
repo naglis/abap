@@ -40,14 +40,15 @@ class Duration(object):
         return cls(utils.parse_duration(s))
 
     def _split(self):
-        minutes, seconds = divmod(self.duration, 60)
-        hours, minutes = divmod(minutes, 60)
-        return hours, minutes, seconds
+        ms, s = divmod(self.duration, 1000)
+        m, s = divmod(s, 60)
+        h, m = divmod(m, 60)
+        return h, m, s, ms
 
     def __format__(self, format):
-        h, m, s = self._split()
+        h, m, s, ms = self._split()
         if format == 'h:m:s.ms':
-            return f'{h:02d}:{m:02d}:{s:02d}.000'
+            return f'{h:02d}:{m:02d}:{s:02d}.{ms:03d}'
         return f'{h:02d}:{m:02d}:{s:02d}'
 
 
