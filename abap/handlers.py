@@ -6,7 +6,7 @@ import xml.etree.cElementTree as ET
 
 import tornado.web
 
-from abap import const, utils
+from abap import __version__, const, utils
 
 
 def render_chapter(chapter):
@@ -88,6 +88,7 @@ class AbookRSSRenderer(object):
         rss = ET.Element('rss', attrib={'version': const.RSS_VERSION})
         channel = ET.SubElement(rss, 'channel')
 
+        ET.SubElement(channel, 'generator').text = f'abap/{__version__}'
         ET.SubElement(channel, 'title').text = self.abook.title
         ET.SubElement(channel, 'link').text = self.base_url
         if self.abook.description:

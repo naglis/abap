@@ -1,8 +1,18 @@
+import os
+import re
+
 from setuptools import setup
+
+
+def get_version(filename):
+    with open(filename) as f:
+        metadata = dict(re.findall(r'__([a-z]+)__ = \'([^\']+)\'', f.read()))
+        return metadata['version']
+
 
 setup(
     name='abap',
-    version='0.1.0',
+    version=get_version(os.path.join('abap', '__init__.py')),
     description='',
     author='Naglis Jonaitis',
     author_email='naglis@mailbox.org',
