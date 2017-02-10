@@ -1,6 +1,7 @@
 import operator
 import re
 import string
+import typing
 
 from abap import const
 
@@ -9,7 +10,8 @@ by_sequence = operator.attrgetter('sequence')
 alphanumeric = frozenset(string.ascii_letters + string.digits)
 
 
-def make_regex_filename_matcher(filenames=None, extensions=None):
+def make_regex_filename_matcher(
+        filenames=None, extensions=None) -> typing.Callable[[str], bool]:
     if extensions is None:
         extensions = ('[a-z0-9]+',)
     if filenames is None:
@@ -17,7 +19,7 @@ def make_regex_filename_matcher(filenames=None, extensions=None):
     pattern = re.compile(r'(?i)^(%s)\.(%s)$' % (
         '|'.join(filenames), '|'.join(extensions)))
 
-    def matcher(fn):
+    def matcher(fn: str) -> bool:
         return pattern.match(fn) is not None
 
     return matcher
@@ -31,11 +33,13 @@ fanart_matcher = make_regex_filename_matcher(
     filenames=const.FANART_FILENAMES, extensions=const.IMAGE_EXTENSIONS)
 
 
-def make_ns_getter(namespace: str):
+def make_ns_getter(namespace: str) -> typing.Callable[[str], str]:
+
+    format_string = '{%s}%%s' % namespace
 
     def getter(elem: str) -> str:
         '''Returns element name with namespace.'''
-        return f'{{{namespace}}}{elem}'
+        return format_string % elem
 
     return getter
 
@@ -46,21 +50,21 @@ def format_duration(seconds: int) -> str:
     return f'{hours:02.0f}:{minutes:02.0f}:{seconds:02.0f}'
 
 
-def parse_duration(s: str) -> int:
-    if not s:
+def parse_duration(ds: str) -> int:
+    if not ds:
         return 0
-    if '.' in s:
-        ms = int(s[-3:])
-        s = s[:-4]
+    if '.' in ds:
+        ms = int(ds[-3:])
+        ds = ds[:-4]
     else:
         ms = 0
-    n = s.count(':')
+    n = ds.count(':')
     if n == 2:
-        h, m, s = map(int, s.split(':'))
+        h, m, s = map(int, ds.split(':'))
     elif n == 1:
-        h, m, s = 0, *map(int, s.split(':'))
+        h, m, s = 0, *map(int, ds.split(':'))
     elif n == 0:
-        h, m, s = 0, 0, int(s)
+        h, m, s = 0, 0, int(ds)
     else:
         raise ValueError('Unsupported format')
     return (((h * 60) + m) * 60 + s) * 1000 + ms
@@ -74,5 +78,5 @@ def validate_lang_code(lang_code: str) -> bool:
     return pattern.match(lang_code) is not None
 
 
-def slugify(s):
+def slugify(s: str) -> str:
     return (''.join((c if c in alphanumeric else '_') for c in s)).strip('_')

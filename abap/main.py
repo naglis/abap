@@ -15,7 +15,7 @@ mimetypes.add_type('audio/x-m4b', '.m4b')
 LOG = logging.getLogger(__name__)
 
 
-def do_init(args):
+def do_init(args) -> None:
     results = scan.labeled_scan(
         args.directory,
         {
@@ -71,7 +71,7 @@ def do_init(args):
         abook.dump(bundle, f)
 
 
-def do_transcode(args):
+def do_transcode(args) -> None:
     data = abook.load(args.abook_file)
     book = abook.Abook.from_dict(
         os.path.abspath(args.abook_file.name), data)
@@ -136,7 +136,7 @@ def do_transcode(args):
         opusenc.communicate()
 
 
-def do_serve(args):
+def do_serve(args) -> None:
     d = abook.load(args.abook_file)
     bundle = abook.Abook.from_dict(
         os.path.abspath(args.abook_file.name), d)

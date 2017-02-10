@@ -1,6 +1,7 @@
 import collections
 import mimetypes
 import pathlib
+import typing
 
 import attr
 import jsonschema
@@ -216,7 +217,7 @@ class Filelike(object):
     _path = attr.attrib(convert=pathlib.Path)
     _size = attr.attrib(init=False, default=None)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'<{self.__class__.__name__}:{self.path}>'
 
     @property
@@ -230,11 +231,11 @@ class Filelike(object):
         return self._size
 
     @property
-    def mimetype(self):
+    def mimetype(self) -> str:
         return utils.first_of(mimetypes.guess_type(str(self.path)))
 
     @property
-    def ext(self):
+    def ext(self) -> str:
         return self._path.suffix.lstrip('.')
 
     def as_dict(self) -> dict:
@@ -319,7 +320,7 @@ class Abook(collections.abc.Sequence):
     def __getitem__(self, idx):
         return self._audiofiles[idx]
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._audiofiles)
 
     @property
@@ -327,23 +328,23 @@ class Abook(collections.abc.Sequence):
         return self._filename.parent
 
     @property
-    def has_cover(self):
+    def has_cover(self) -> bool:
         return bool(self.covers)
 
     @property
-    def covers(self):
+    def covers(self) -> typing.List:
         return [af for af in self.artifacts if is_cover(af)]
 
     @property
-    def has_fanart(self):
+    def has_fanart(self) -> bool:
         return bool(self.fanarts)
 
     @property
-    def fanarts(self):
+    def fanarts(self) -> typing.List:
         return [af for af in self.artifacts if is_fanart(af)]
 
     @classmethod
-    def from_dict(cls, filename, d):
+    def from_dict(cls, filename, d: dict):
         return cls(
             filename,
             d.get('authors', []),

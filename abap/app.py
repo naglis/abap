@@ -1,9 +1,9 @@
 import tornado.web
 
-from abap import handlers
+from abap import abook, handlers
 
 
-def make_app(bundle):
+def make_app(bundle: abook.Abook):
     abap_app = tornado.web.Application([
         tornado.web.URLSpec(
             r'/(?P<slug>\w+)',
