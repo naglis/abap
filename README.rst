@@ -20,7 +20,8 @@ Features
 Dependencies
 ------------
 
-* tornado
-* mutagen
 * PyYAML
 * attrs
+* jsonschema
+* mutagen
+* tornado
