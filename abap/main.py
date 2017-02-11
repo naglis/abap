@@ -1,10 +1,11 @@
 import argparse
+import asyncio
 import collections
+import contextlib
 import logging
 import mimetypes
 import os
 import pathlib
-import subprocess
 
 import tornado.ioloop
 
@@ -71,39 +72,54 @@ def do_init(args) -> None:
         abook.dump(bundle, f)
 
 
-def do_transcode(args) -> None:
-    data = abook.load(args.abook_file)
-    book = abook.Abook.from_dict(
-        os.path.abspath(args.abook_file.name), data)
+async def produce(queue, abook):
+    for audiofile in abook:
+        await queue.put((abook, audiofile))
 
+
+async def transcode(queue, args):
     output_dir = pathlib.Path(os.path.abspath(args.output_dir))
 
-    if not book.has_cover:
-        cover_filename = None
-    else:
-        cover_filename = book.path / utils.first_of(book.covers).path
+    while True:
 
-    for af in book:
-        filename = book.path / af.path
-        output_filename = (output_dir / af.path).with_suffix('.opus')
+        if queue.empty():
+            break
+
+        abook, audiofile = await queue.get()
+
+        if not abook.has_cover:
+            cover_filename = None
+        else:
+            cover_filename = abook.path / utils.first_of(abook.covers).path
+
+        filename = abook.path / audiofile.path
+        output_filename = (output_dir / audiofile.path).with_suffix('.opus')
         tags = tagutils.get_tags(str(filename))
-        LOG.info(f'Transcoding: {af.path} to: {output_filename}...')
-        lame = subprocess.Popen([
-            'lame',
-            '--quiet',
-            '--decode',
-            '--mp3input',
-            str(filename),
-            '-'
-        ], stdout=subprocess.PIPE)
         chapter_comments = []
-        for i, chapter in enumerate(af.chapters):
+        for i, chapter in enumerate(audiofile.chapters):
             chapter_comments.extend([
                 '--comment',
                 f'CHAPTER{i:03d}={chapter.start:hh:mm:ss.ms}',
                 '--comment',
                 f'CHAPTER{i:03d}NAME={chapter.name}',
             ])
+        LOG.info(f'Transcoding: {audiofile.path} to: {output_filename}...')
+
+        # Regular suprocess piping does not work in asyncio.
+        # Use os.pipe() based on:
+        # http://stackoverflow.com/a/36666420
+        reader, writer = os.pipe()
+        await asyncio.create_subprocess_exec(
+            'lame',
+            '--quiet',
+            '--decode',
+            '--mp3input',
+            str(filename),
+            '-',
+            stdout=writer
+        )
+        os.close(writer)
+
         opusenc_args = [
             'opusenc',
             '--quiet',
@@ -117,23 +133,43 @@ def do_transcode(args) -> None:
             '--max-delay',
             str(args.max_delay),
             '--artist',
-            af.author if af.author else ', '.join(book.authors),
+            audiofile.author or ', '.join(abook.authors),
             *chapter_comments,
             '--album',
-            book.title,
+            abook.title,
             '--title',
-            af.title,
+            audiofile.title,
             '-',
-            output_filename,
+            str(output_filename),
         ]
         if cover_filename:
             opusenc_args.extend([
                 '--picture',
                 f'3||Front Cover||{cover_filename!s}',
             ])
-        opusenc = subprocess.Popen(opusenc_args, stdin=lame.stdout)
-        lame.stdout.close()
-        opusenc.communicate()
+        opusenc = await asyncio.create_subprocess_exec(
+            *opusenc_args,
+            stdin=reader,
+        )
+        os.close(reader)
+        await opusenc.communicate()
+        queue.task_done()
+
+
+def do_transcode(args) -> None:
+    data = abook.load(args.abook_file)
+    book = abook.Abook.from_dict(
+        os.path.abspath(args.abook_file.name), data)
+
+    with contextlib.closing(asyncio.get_event_loop()) as loop:
+        queue = asyncio.Queue(args.parallel, loop=loop)
+        loop.create_task(produce(queue, book))
+
+        consumer_futures = []
+        for idx in range(args.parallel):
+            consumer_futures.append(loop.create_task(transcode(queue, args)))
+
+        loop.run_until_complete(asyncio.gather(*consumer_futures, loop=loop))
 
 
 def do_serve(args) -> None:
@@ -193,6 +229,13 @@ def main():
         default=1000,
         help='Maximum container delay in milliseconds (0-1000). '
              'Default: %(default)s'
+    )
+    transcode_parser.add_argument(
+        '-p',
+        '--parallel',
+        default=os.cpu_count(),
+        type=int,
+        help='Number of parallel transcoding processes. Default: %(default)s',
     )
     transcode_parser.set_defaults(func=do_transcode)
 
