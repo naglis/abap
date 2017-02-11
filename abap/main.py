@@ -72,12 +72,12 @@ def do_init(args) -> None:
         abook.dump(bundle, f)
 
 
-async def produce(queue, abook):
+async def produce(queue: asyncio.Queue, abook: abook.Abook):
     for audiofile in abook:
         await queue.put((abook, audiofile))
 
 
-async def transcode(queue, args):
+async def transcode(queue: asyncio.Queue, args):
     output_dir = pathlib.Path(os.path.abspath(args.output_dir))
 
     while True:
