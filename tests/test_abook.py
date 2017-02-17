@@ -20,12 +20,13 @@ class TestUtils(unittest.TestCase):
             (None, None, 0),
         ]
         for s, exc, expected in test_cases:
-            if exc:
-                with self.assertRaises(exc):
+            with self.subTest(s=s, exc=exc, expected=expected):
+                if exc:
+                    with self.assertRaises(exc):
+                        actual = utils.parse_duration(s)
+                else:
                     actual = utils.parse_duration(s)
-            else:
-                actual = utils.parse_duration(s)
-                self.assertEqual(actual, expected)
+                    self.assertEqual(actual, expected)
 
     def test_validate_lang_code(self):
         test_cases = [
@@ -37,8 +38,9 @@ class TestUtils(unittest.TestCase):
             ('Foo,bar', False),
         ]
         for lang_code, expected in test_cases:
-            actual = utils.validate_lang_code(lang_code)
-            self.assertEqual(actual, expected)
+            with self.subTest(lang_code=lang_code, expected=expected):
+                actual = utils.validate_lang_code(lang_code)
+                self.assertEqual(actual, expected)
 
 
 class TestDuration(unittest.TestCase):
@@ -50,8 +52,8 @@ class TestDuration(unittest.TestCase):
             ('00:01:01.001', 61001),
         ]
         for s, expected in test_cases:
-            d = Duration.from_string(s)
-            self.assertEqual(d.duration, expected)
+            with self.subTest(s=s, expected=expected):
+                self.assertEqual(Duration.from_string(s).duration, expected)
 
     def test_format(self):
         test_cases = [
@@ -60,5 +62,5 @@ class TestDuration(unittest.TestCase):
             (61, '{d:h:m:s.ms}', '00:01:01.000'),
         ]
         for duration, fmt, expected in test_cases:
-            d = Duration(duration)
-            self.assertEqual(fmt.format(d=d), expected)
+            with self.subTest(duration=duration, fmt=fmt, expected=expected):
+                self.assertEqual(fmt.format(d=Duration(duration)), expected)
