@@ -44,7 +44,8 @@ def make_ns_getter(namespace: str) -> typing.Callable[[str], str]:
     return getter
 
 
-def format_duration(seconds: int) -> str:
+def format_duration(miliseconds: int) -> str:
+    seconds, miliseconds = divmod(miliseconds, 1000)
     minutes, seconds = divmod(seconds, 60)
     hours, minutes = divmod(minutes, 60)
     return f'{hours:02.0f}:{minutes:02.0f}:{seconds:02.0f}'
