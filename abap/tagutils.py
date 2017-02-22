@@ -1,3 +1,5 @@
+import pathlib
+
 import attr
 import mutagen
 
@@ -27,8 +29,8 @@ def id3_getter(tag, tags):
         return single_item(v.text)
 
 
-def get_tags(file_path):
-    tags = mutagen.File(file_path)
+def get_tags(file_path: pathlib.Path):
+    tags = mutagen.File(str(file_path))
     duration = int(tags.info.length * 1000)
     ftype = type(tags.info)
     if ftype == mutagen.oggvorbis.OggVorbisInfo:

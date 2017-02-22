@@ -36,11 +36,11 @@ def abook_from_directory(directory: pathlib.Path) -> abook.Abook:
         [], [], collections.OrderedDict(), collections.OrderedDict(),
     )
     for idx, item_path in enumerate(audio_files, start=1):
-        abs_path = os.path.join(directory, item_path)
-        tags = tagutils.get_tags(abs_path)
+        # abs_path = os.path.join(directory, item_path)
+        tags = tagutils.get_tags(item_path)
         author = tags.artist if tags.artist else 'Unknown artist'
         item = abook.Audiofile(
-            item_path,
+            item_path.relative_to(directory),
             author=author,
             title=tags.title,
             duration=abook.Duration(tags.duration),
@@ -57,7 +57,8 @@ def abook_from_directory(directory: pathlib.Path) -> abook.Abook:
         for result in results.get(c, []):
             if result in unique:
                 continue
-            artifacts.append(abook.Artifact(result, c, type=c))
+            artifacts.append(
+                abook.Artifact(result.relative_to(directory), c, type=c))
             unique.add(result)
 
     return abook.Abook(
