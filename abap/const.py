@@ -21,3 +21,5 @@ DURATION_RE = r'^([0-9]{2,}):([0-5][0-9]):([0-5][0-9])(\.([0-9]{3}))?$'
 
 # Our default time-to-live of RSS feeds (in minutes).
 TTL = 60 * 24 * 365
+
+MANIFEST_FILENAME = 'manifest.abook'

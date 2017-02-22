@@ -6,19 +6,20 @@ import logging
 import mimetypes
 import os
 import pathlib
+import zipfile
 
 import tornado.ioloop
 
-from abap import abook, app, scan, tagutils, utils
+from abap import abook, app, const, scan, tagutils, utils
 
 mimetypes.add_type('audio/x-m4b', '.m4b')
 
 LOG = logging.getLogger(__name__)
 
 
-def do_init(args) -> None:
+def abook_from_directory(directory: pathlib.Path) -> abook.Abook:
     results = scan.labeled_scan(
-        args.directory,
+        directory,
         {
             'audio': utils.audio_matcher,
             'cover': utils.cover_matcher,
@@ -35,7 +36,7 @@ def do_init(args) -> None:
         [], [], collections.OrderedDict(), collections.OrderedDict(),
     )
     for idx, item_path in enumerate(audio_files, start=1):
-        abs_path = os.path.join(args.directory, item_path)
+        abs_path = os.path.join(directory, item_path)
         tags = tagutils.get_tags(abs_path)
         author = tags.artist if tags.artist else 'Unknown artist'
         item = abook.Audiofile(
@@ -59,8 +60,8 @@ def do_init(args) -> None:
             artifacts.append(abook.Artifact(result, c, type=c))
             unique.add(result)
 
-    bundle = abook.Abook(
-        args.directory,
+    return abook.Abook(
+        directory,
         list(authors.keys()),
         album,
         utils.slugify(album),
@@ -68,8 +69,11 @@ def do_init(args) -> None:
         artifacts=artifacts,
     )
 
+
+def do_init(args) -> None:
+    abook_ = abook_from_directory(args.directory)
     with open(os.path.join(args.directory, args.output), 'w') as f:
-        abook.dump(bundle, f)
+        abook.dump(abook_, f)
 
 
 async def produce(queue: asyncio.Queue, abook: abook.Abook):
@@ -173,12 +177,39 @@ def do_transcode(args) -> None:
 
 
 def do_serve(args) -> None:
-    d = abook.load(args.abook_file)
-    bundle = abook.Abook.from_dict(
-        os.path.abspath(args.abook_file.name), d)
-    bapp = app.make_app(bundle)
+    manifest_filename = args.directory / const.MANIFEST_FILENAME
+    if manifest_filename.exists():
+        with open(manifest_filename, 'r') as f:
+            data = abook.load(f)
+            abook_ = abook.Abook.from_dict(manifest_filename, data)
+    else:
+        abook_ = abook_from_directory(args.directory)
+    bapp = app.make_app(abook_)
     bapp.listen(args.port)
     tornado.ioloop.IOLoop.current().start()
+
+
+def do_zip(args) -> None:
+    manifest_filename = args.directory / const.MANIFEST_FILENAME
+    if manifest_filename.exists():
+        with open(manifest_filename, 'r') as f:
+            data = abook.load(f)
+            abook_ = abook.Abook.from_dict(manifest_filename, data)
+    else:
+        abook_ = abook_from_directory(args.directory)
+
+    with zipfile.ZipFile(args.output, 'w', zipfile.ZIP_DEFLATED) as abook_zip:
+        for af in abook_:
+            LOG.info(f'Archiving audiofile: {af.path!s}')
+            abook_zip.write(args.directory / af.path)
+
+        for ar in abook_.artifacts:
+            LOG.info(f'Archiving artifact: {ar.path!s}')
+            abook_zip.write(args.directory / ar.path)
+
+        if args.manifest and manifest_filename.exists():
+            LOG.info(f'Archiving manifest file: {manifest_filename!s}')
+            abook_zip.write(manifest_filename)
 
 
 def main():
@@ -194,25 +225,61 @@ def main():
     subparsers = parser.add_subparsers()
 
     init_parser = subparsers.add_parser('init')
-    init_parser.add_argument('directory')
-    init_parser.add_argument('output', help='abook output filename')
+    init_parser.add_argument(
+        'directory',
+        type=pathlib.Path,
+    )
+    init_parser.add_argument(
+        '-o',
+        '--output',
+        default=const.MANIFEST_FILENAME,
+        help='abook output filename. Default: %(default)s',
+    )
     init_parser.add_argument('--id')
     init_parser.set_defaults(func=do_init)
 
     serve_parser = subparsers.add_parser('serve')
     serve_parser.add_argument(
-        'abook_file',
-        type=argparse.FileType('r'),
+        'directory',
+        type=pathlib.Path,
+        help='Path to the directory which contains the audiofiles to serve.'
+             'If a manifest file exists in the directory, it will be '
+             'parsed, otherwise the directory will be scanned for audio files.'
     )
     serve_parser.add_argument('-p', '--port', type=int, default=8000)
     serve_parser.set_defaults(func=do_serve)
+
+    zip_parser = subparsers.add_parser('zip')
+    zip_parser.add_argument(
+        'directory',
+        type=pathlib.Path,
+        help='Path to the directory which contains the audiofiles to zip.'
+             'If a manifest file exists in the directory, it will be '
+             'parsed, otherwise the directory will be scanned for audio files.'
+    )
+    zip_parser.add_argument(
+        'output',
+        help='path to the ZIP archive',
+    )
+    zip_parser.add_argument(
+        '-M',
+        '--no-manifest',
+        help='Do not archive the manifest file',
+        dest='manifest',
+        action='store_false',
+    )
+    zip_parser.set_defaults(func=do_zip)
 
     transcode_parser = subparsers.add_parser('transcode')
     transcode_parser.add_argument(
         'abook_file',
         type=argparse.FileType('r'),
     )
-    transcode_parser.add_argument('output_dir')
+    transcode_parser.add_argument(
+        'output_dir',
+        type=pathlib.Path,
+        help='Path to the directory where transcoded files will be stored.',
+    )
     transcode_parser.add_argument(
         '-b',
         '--bitrate',
