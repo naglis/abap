@@ -1,4 +1,4 @@
-import os
+import pathlib
 import re
 
 from setuptools import setup
@@ -12,7 +12,7 @@ def get_version(filename):
 
 setup(
     name='abap',
-    version=get_version(os.path.join('abap', '__init__.py')),
+    version=get_version(pathlib.Path('abap') / '__init__.py'),
     description='',
     author='Naglis Jonaitis',
     author_email='naglis@mailbox.org',
@@ -23,10 +23,19 @@ setup(
         'attrs>=16.3.0,<17.0.0',
         'jsonschema>=2.6.0,<3.0.0',
         'mutagen>=1.36.0,<1.37.0',
+        'stevedore>=1.20.0,<1.30.0',
         'tornado>=4.4.0,<4.5.0',
     ],
     entry_points={
-        'console_scripts': ['abap = abap.main:main'],
+        'console_scripts': [
+            'abap = abap.main:main',
+        ],
+        'abap.command': [
+            'init = abap.commands:InitCommand',
+            'serve = abap.commands:ServeCommand',
+            'transcode = abap.commands:TranscodeCommand',
+            'zip = abap.commands:ZipCommand',
+        ],
     },
     include_package_data=True,
     classifiers=[

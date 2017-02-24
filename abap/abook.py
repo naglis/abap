@@ -7,7 +7,7 @@ import attr
 import jsonschema
 import yaml
 
-from abap import const, utils
+from abap import const, utils, scan, tagutils
 
 
 chapter_schema = {
@@ -375,3 +375,57 @@ class Abook(collections.abc.Sequence):
                 af.as_dict() for af in self.artifacts
             ],
         }
+
+
+def abook_from_directory(directory: pathlib.Path) -> Abook:
+    results = scan.labeled_scan(
+        directory,
+        {
+            'audio': utils.audio_matcher,
+            'cover': utils.cover_matcher,
+            'fanart': utils.fanart_matcher,
+            'image': utils.image_matcher,
+        }
+    )
+
+    audio_files = sorted(results.get('audio', []))
+    if not audio_files:
+        raise SystemExit('No audio files found!')
+
+    audiofiles, artifacts, authors, albums = (
+        [], [], collections.OrderedDict(), collections.OrderedDict(),
+    )
+    for idx, item_path in enumerate(audio_files, start=1):
+        # abs_path = os.path.join(directory, item_path)
+        tags = tagutils.get_tags(item_path)
+        author = tags.artist if tags.artist else 'Unknown artist'
+        item = Audiofile(
+            item_path.relative_to(directory),
+            author=author,
+            title=tags.title,
+            duration=Duration(tags.duration),
+        )
+        if tags.album:
+            albums[tags.album] = True
+        authors[author] = True
+        audiofiles.append(item)
+
+    album = utils.first_of(list(albums.keys())) if albums else 'Unknown album'
+
+    unique = set()
+    for c in ('cover', 'fanart', 'image'):
+        for result in results.get(c, []):
+            if result in unique:
+                continue
+            artifacts.append(
+                Artifact(result.relative_to(directory), c, type=c))
+            unique.add(result)
+
+    return Abook(
+        directory,
+        list(authors.keys()),
+        album,
+        utils.slugify(album),
+        audiofiles=audiofiles,
+        artifacts=artifacts,
+    )
