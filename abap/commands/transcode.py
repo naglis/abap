@@ -134,7 +134,7 @@ class TranscodeCommand(base.AbapCommand):
             await opusenc.communicate()
             queue.task_done()
 
-    def take_action(args) -> None:
+    def take_action(self, args) -> None:
         data = abook.load(args.abook_file)
         book = abook.Abook.from_dict(
             os.path.abspath(args.abook_file.name), data)
