@@ -114,7 +114,7 @@ class AbookRSSRenderer(object):
         ET.SubElement(image, 'link').text = self.base_url
 
         now = datetime.datetime.now()
-        for idx, audiofile in enumerate(self.abook):
+        for idx, audiofile in enumerate(self.abook, start=1):
             channel.append(
                 self.render_audiofile(audiofile, sequence=idx, when=now)
             )
@@ -139,7 +139,9 @@ class StreamHandler(tornado.web.StaticFileHandler):
             raise tornado.web.HTTPError(status_code=404)
 
         try:
-            artifact = bundle[int(sequence)]
+            artifact = bundle[int(sequence) - 1]
+        except ValueError:
+            raise tornado.web.HTTPError(status_code=400)
         except IndexError:
             raise tornado.web.HTTPError(status_code=404)
 
