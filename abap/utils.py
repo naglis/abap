@@ -1,4 +1,6 @@
 import operator
+import os
+import pathlib
 import re
 import string
 import typing
@@ -81,3 +83,59 @@ def validate_lang_code(lang_code: str) -> bool:
 
 def slugify(s: str) -> str:
     return (''.join((c if c in alphanumeric else '_') for c in s)).strip('_')
+
+
+def parse_pos(raw: str):
+    """
+    Parse position from given string.
+
+    Arguments:
+        raw     raw data that is parsed to a position.
+
+    Returns:  Position of file in nanoseconds, or None
+              if parsing failed.
+    """
+
+    # Take care of negative positions
+    if raw.startswith(('-', '+')):
+        rel = True
+        sign = -1 if raw[0] == '-' else 1
+        raw = raw[1:]
+    else:
+        sign = 1
+        rel = False
+
+    if set(raw) - const.POS_SYMBOLS:
+        return None, None
+
+    parts = raw.split(':')
+
+    if '' in parts:
+        return None, None
+
+    h, m, s = 0, 0, 0
+    if parts:
+        s = int(parts[-1])
+    if len(parts) >= 2:
+        m = int(parts[-2])
+    if len(parts) == 3:
+        h = int(parts[-3])
+    if len(parts) > 3:
+        return None, None
+
+    if h and m and s > 59:
+        return None, None
+
+    if not h and m and s > 59:
+        return None, None
+
+    if h and m > 59:
+        return None, None
+
+    pos = sign * ((h * 60 + m) * 60 + s)
+    return rel, pos
+
+
+def get_data_dir(app_name):
+    default = pathlib.PosixPath('~/.local/share').expanduser()
+    return pathlib.Path(os.getenv('XDG_DATA_DIR', default)) / app_name

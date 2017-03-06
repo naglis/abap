@@ -21,6 +21,7 @@ setup(
     install_requires=[
         'PyYAML>=3.12,<3.20',
         'attrs>=16.3.0,<17.0.0',
+        'blessings>=1.6,<1.7',
         'jsonschema>=2.6.0,<3.0.0',
         'mutagen>=1.36.0,<1.37.0',
         'stevedore>=1.20.0,<1.30.0',
@@ -34,6 +35,7 @@ setup(
             'init = abap.commands:InitCommand',
             'serve = abap.commands:ServeCommand',
             'transcode = abap.commands:TranscodeCommand',
+            'play = abap.commands:PlayCommand',
             'zip = abap.commands:ZipCommand',
         ],
     },

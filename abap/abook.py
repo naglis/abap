@@ -323,6 +323,9 @@ class Abook(collections.abc.Sequence):
     def __len__(self) -> int:
         return len(self._audiofiles)
 
+    def index(self, x):
+        return self._audiofiles.index(x)
+
     @property
     def path(self):
         return self._filename.parent

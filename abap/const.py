@@ -1,3 +1,4 @@
+POS_SYMBOLS = frozenset(':0123456789')
 RFC822 = '%a, %d %b %Y %H:%M:%S +0000'
 ITUNES_NS = 'http://www.itunes.com/dtds/podcast-1.0.dtd'
 ATOM_NS = 'http://www.w3.org/2005/Atom'
