@@ -82,7 +82,8 @@ def validate_lang_code(lang_code: str) -> bool:
 
 
 def slugify(s: str) -> str:
-    return (''.join((c if c in alphanumeric else '_') for c in s)).strip('_')
+    return (''.join(
+        (c if c in alphanumeric else '_') for c in s)).strip('_').lower()
 
 
 def parse_pos(raw: str):
