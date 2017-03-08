@@ -34,9 +34,6 @@ setup(
         'abap.command': [
             'init = abap.commands:InitCommand',
             'serve = abap.commands:ServeCommand',
-            'transcode = abap.commands:TranscodeCommand',
-            'play = abap.commands:PlayCommand',
-            'zip = abap.commands:ZipCommand',
         ],
     },
     include_package_data=True,
