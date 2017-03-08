@@ -127,19 +127,31 @@ class AbookRSSRenderer(object):
             ET.tostring(rss, encoding='utf-8')).toprettyxml()
 
 
-class StreamHandler(tornado.web.StaticFileHandler):
+class AbookHandler:
+
+    @property
+    def bundle(self) -> abook.Abook:
+        return self.application.bundle
+
+    def slug_exists(self, slug: str) -> bool:
+        return self.bundle.slug == slug
+
+    def assert_slug(self, slug: str):
+        if not self.slug_exists(slug):
+            raise tornado.web.HTTPError(status_code=400)
+
+
+class StreamHandler(tornado.web.StaticFileHandler, AbookHandler):
 
     def head(self, slug: str, sequence: str, ext: str):
         return self.get(slug, sequence, ext, include_body=False)
 
     def get(self, slug: str, sequence: str, ext: str,
             include_body: bool = True):
-        bundle = self.application.bundle
-        if not bundle.slug == slug:
-            raise tornado.web.HTTPError(status_code=404)
+        self.assert_slug(slug)
 
         try:
-            artifact = bundle[int(sequence) - 1]
+            artifact = self.bundle[int(sequence) - 1]
         except ValueError:
             raise tornado.web.HTTPError(status_code=400)
         except IndexError:
@@ -149,42 +161,40 @@ class StreamHandler(tornado.web.StaticFileHandler):
         return super().get(artifact.path, include_body=include_body)
 
 
-class CoverHandler(tornado.web.StaticFileHandler):
+class CoverHandler(tornado.web.StaticFileHandler, AbookHandler):
+
+    def slug_exists(self, slug):
+        return super().slug_exists(slug) and self.bundle.has_cover
 
     def get(self, slug: str):
-        bundle = self.application.bundle
-        if not (bundle.slug == slug and bundle.has_cover):
-            raise tornado.web.HTTPError(status_code=404)
-        else:
-            cover = utils.first_of(bundle.covers)
+        self.assert_slug(slug)
+        cover = utils.first_of(self.bundle.covers)
         self.set_header('Content-Type', cover.mimetype)
         return super().get(cover.path)
 
 
-class FanartHandler(tornado.web.StaticFileHandler):
+class FanartHandler(tornado.web.StaticFileHandler, AbookHandler):
+
+    def slug_exists(self, slug):
+        return super().slug_exists(slug) and self.bundle.has_fanart
 
     def get(self, slug: str):
-        bundle = self.application.bundle
-        if not (bundle.slug == slug and bundle.has_fanart):
-            raise tornado.web.HTTPError(status_code=404)
-        else:
-            fanart = utils.first_of(bundle.fanarts)
+        self.assert_slug(slug)
+        fanart = utils.first_of(self.bundle.fanarts)
         self.set_header('Content-Type', fanart.mimetype)
         return super().get(fanart.path)
 
 
-class RSSHandler(tornado.web.RequestHandler):
+class RSSHandler(tornado.web.RequestHandler, AbookHandler):
 
     def get(self, slug: str):
-        bundle = self.application.bundle
-        if not bundle.slug == slug:
-            raise tornado.web.HTTPError(status_code=404)
+        self.assert_slug(slug)
 
         self.set_header('Content-Type', 'application/rss+xml; charset="utf-8"')
 
         base_url = f'{self.request.protocol}://{self.request.host}'
         renderer = AbookRSSRenderer(
-            bundle,
+            self.bundle,
             base_url,
             url_reverse_func=self.reverse_url,
         )
