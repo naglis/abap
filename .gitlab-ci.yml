@@ -1,0 +1,8 @@
+before_script:
+    - pip install --requirement requirements.txt
+    - pip install coverage
+test:3.6:
+    image: python:3.6-alpine
+    script:
+        - coverage run --source=abap -m unittest discover
+        - coverage report
