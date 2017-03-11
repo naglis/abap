@@ -175,6 +175,9 @@ class Duration(object):
     def __str__(self):
         return utils.format_duration(self.duration)
 
+    def __bool__(self):
+        return bool(self.duration)
+
     @classmethod
     def from_string(cls, s):
         return cls(utils.parse_duration(s))
@@ -205,11 +208,15 @@ class Chapter(object):
         return cls(d['name'], start, end)
 
     def as_dict(self) -> dict:
-        return {
+        values = {
             'name': self.name,
             'start': str(self.start),
-            'end': str(self.end),
         }
+        if self.end:
+            values.update({
+                'end': str(self.end),
+            })
+        return values
 
 
 @attr.attrs

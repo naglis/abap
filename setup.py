@@ -34,6 +34,7 @@ setup(
         'abap.command': [
             'init = abap.commands:InitCommand',
             'serve = abap.commands:ServeCommand',
+            'import_chapters = abap.commands:ImportChaptersCommand',
         ],
     },
     include_package_data=True,

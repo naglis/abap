@@ -56,9 +56,10 @@ def format_duration(miliseconds: int) -> str:
 def parse_duration(ds: str) -> int:
     if not ds:
         return 0
-    if '.' in ds:
-        ms = int(ds[-3:])
-        ds = ds[:-4]
+    ms_sep_pos = ds.rfind('.')
+    if not ms_sep_pos == -1:
+        ms = round(float(ds[ms_sep_pos:]) * 1_000)
+        ds = ds[:ms_sep_pos]
     else:
         ms = 0
     n = ds.count(':')
