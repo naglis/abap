@@ -1,6 +1,7 @@
 import argparse
 import logging
 import mimetypes
+import sys
 
 import stevedore
 
@@ -9,7 +10,7 @@ mimetypes.add_type('audio/x-m4b', '.m4b')
 LOG = logging.getLogger(__name__)
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '-d',
@@ -27,7 +28,7 @@ def main():
         command.get_parser(p)
         p.set_defaults(func=command.take_action)
 
-    args = parser.parse_args()
+    args = parser.parse_args(args=argv)
 
     logging.basicConfig(level=args.log_level)
 
@@ -38,4 +39,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv)
