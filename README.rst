@@ -11,7 +11,7 @@ Features
 
 * Python 3.6+
 * Audiobook scanner with metadata support.
-* Additional audiobook in YAML file called abook.
+* Additional audiobook metadata in a YAML file called abook.
 * Valid RSS 2.0 and iTunes podcast feed.
 * Built-in podcast server using Tornado.
 * Asynchronous file streaming with seeking support (byte serving).
