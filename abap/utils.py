@@ -47,7 +47,7 @@ def make_ns_getter(namespace: str) -> typing.Callable[[str], str]:
 
 
 def format_duration(miliseconds: int) -> str:
-    seconds, miliseconds = divmod(miliseconds, 1000)
+    seconds, miliseconds = divmod(miliseconds, 1_000)
     minutes, seconds = divmod(seconds, 60)
     hours, minutes = divmod(minutes, 60)
     return f'{hours:02.0f}:{minutes:02.0f}:{seconds:02.0f}'
@@ -71,7 +71,7 @@ def parse_duration(ds: str) -> int:
         h, m, s = 0, 0, int(ds)
     else:
         raise ValueError('Unsupported format')
-    return (((h * 60) + m) * 60 + s) * 1000 + ms
+    return (((h * 60) + m) * 60 + s) * 1_000 + ms
 
 
 def validate_lang_code(lang_code: str) -> bool:

@@ -7,9 +7,9 @@ class TestDuration(unittest.TestCase):
 
     def test_from_string(self):
         test_cases = [
-            ('00:00:01', 1000),
-            ('00:01:01', 61000),
-            ('00:01:01.001', 61001),
+            ('00:00:01', 1_000),
+            ('00:01:01', 61_000),
+            ('00:01:01.001', 61_001),
         ]
         for s, expected in test_cases:
             with self.subTest(s=s, expected=expected):

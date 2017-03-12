@@ -31,7 +31,7 @@ def id3_getter(tag, tags):
 
 def get_tags(file_path: pathlib.Path):
     tags = mutagen.File(str(file_path))
-    duration = int(tags.info.length * 1000)
+    duration = int(tags.info.length * 1_000)
     ftype = type(tags.info)
     if ftype == mutagen.oggvorbis.OggVorbisInfo:
         artist = single_item(tags.get('artist'))

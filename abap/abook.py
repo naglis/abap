@@ -186,7 +186,7 @@ class Duration(object):
         return cls(utils.parse_duration(s))
 
     def _split(self):
-        ms, s = divmod(self.duration, 1000)
+        ms, s = divmod(self.duration, 1_000)
         m, s = divmod(s, 60)
         h, m = divmod(m, 60)
         return h, m, s, ms
