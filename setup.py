@@ -39,6 +39,12 @@ setup(
             'serve = abap.commands:ServeCommand',
             'import_chapters = abap.commands:ImportChaptersCommand',
         ],
+        'abap.rss_renderer': [
+            'rss2 = abap.handlers:RSSRenderingPlugin',
+            'itunes = abap.handlers:ITunesRenderingPlugin',
+            'atom = abap.handlers:AtomRenderingPlugin',
+            'podlove_chapters = abap.handlers:PodloveChapterRenderingPlugin',
+        ],
     },
     include_package_data=True,
     classifiers=[

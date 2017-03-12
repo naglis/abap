@@ -1,3 +1,4 @@
+import datetime
 import operator
 import os
 import pathlib
@@ -141,3 +142,14 @@ def parse_pos(raw: str):
 def get_data_dir(app_name):
     default = pathlib.PosixPath('~/.local/share').expanduser()
     return pathlib.Path(os.getenv('XDG_DATA_DIR', default)) / app_name
+
+
+def str_to_date(fmts):
+
+    def converter(s):
+        for fmt in fmts:
+            try:
+                return datetime.datetime.strptime(s, fmt)
+            except ValueError:
+                pass
+        raise ValueError(f'Invalid date(time): {s}')

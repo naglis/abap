@@ -326,6 +326,10 @@ class Abook(collections.abc.Sequence):
     )
     _audiofiles = attr.attrib(default=attr.Factory(list), repr=False)
     artifacts = attr.attrib(default=attr.Factory(list), repr=False)
+    publication_date = attr.attrib(
+        convert=utils.str_to_date(['%Y-%m-%d']),
+        default=None,
+    )
 
     def __getitem__(self, idx):
         return self._audiofiles[idx]
@@ -371,10 +375,11 @@ class Abook(collections.abc.Sequence):
             artifacts=[
                 Artifact.from_dict(ad) for ad in d.get('artifacts', [])
             ],
+            publication_date=d.get('publication_date'),
         )
 
     def as_dict(self) -> dict:
-        return {
+        vals = {
             'version': Abook.VERSION,
             'authors': self.authors,
             'title': self.title,
@@ -388,6 +393,11 @@ class Abook(collections.abc.Sequence):
                 af.as_dict() for af in self.artifacts
             ],
         }
+        if self.publication_date:
+            vals.update({
+                'publication_date': self.publication_date.strftime('%Y-%m-%d'),
+            })
+        return vals
 
 
 def abook_from_directory(directory: pathlib.Path) -> Abook:
