@@ -135,15 +135,18 @@ abook_schema = {
 
 
 def load(fobj):
-    data = yaml.load(fobj)
+    data = yaml.safe_load(fobj)
     jsonschema.validate(data, abook_schema)
     return data
 
 
 def dump(abook, fobj):
-    yaml.dump(
+    yaml.safe_dump(
         abook.as_dict(), fobj,
-        default_flow_style=False, indent=2, width=79
+        default_flow_style=False,
+        indent=2,
+        width=79,
+        allow_unicode=True,
     )
 
 
