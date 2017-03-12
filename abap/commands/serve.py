@@ -12,9 +12,10 @@ class ServeCommand(base.AbapCommand):
         parser.add_argument(
             'directory',
             type=pathlib.Path,
-            help='Path to the directory which contains the audiofiles to serve.'
-                'If a manifest file exists in the directory, it will be '
-                'parsed, otherwise the directory will be scanned for audio files.'
+            help='Path to the directory which contains the audiofiles to '
+                 'serve.If a manifest file exists in the directory, '
+                 'it will be parsed, otherwise the directory will be scanned '
+                 'for audio files.',
         )
         parser.add_argument('-p', '--port', type=int, default=8000)
         return parser
@@ -30,5 +31,3 @@ class ServeCommand(base.AbapCommand):
         bapp = app.make_app(abook_)
         bapp.listen(args.port)
         tornado.ioloop.IOLoop.current().start()
-
-
