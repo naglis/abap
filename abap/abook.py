@@ -408,7 +408,7 @@ def abook_from_directory(directory: pathlib.Path) -> Abook:
     audiofiles, artifacts, authors, albums = (
         [], [], collections.OrderedDict(), collections.OrderedDict(),
     )
-    for idx, item_path in enumerate(audio_files, start=1):
+    for item_path in audio_files:
         # abs_path = os.path.join(directory, item_path)
         tags = tagutils.get_tags(item_path)
         author = tags.artist if tags.artist else 'Unknown artist'
