@@ -1,0 +1,6 @@
+[run]
+source = abap
+
+omit =
+    __repr__
+    pragma: no cover
