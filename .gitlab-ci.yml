@@ -2,9 +2,11 @@ before_script:
   - pip install --requirement requirements.txt
 
 test:3.6:
+  image: python:3.6-alpine
   script:
     - tox -e py36
 
 linters:
+  image: python:3.6-alpine
   script:
     - tox -e flake8
