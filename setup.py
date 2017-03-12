@@ -27,6 +27,7 @@ setup(
     license='MIT',
     packages=['abap'],
     install_requires=get_requirements(),
+    tests_require=get_requirements('test_requirements.txt'),
     entry_points={
         'console_scripts': [
             'abap = abap.main:main',
