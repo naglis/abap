@@ -9,10 +9,6 @@ ChapterGenerator = typing.Generator[abook.Chapter, None, None]
 
 def parse_audacity_chapters(fobj: typing.io.TextIO,
                             ignore_end: bool = False) -> ChapterGenerator:
-
-    def convert_pos(pos: str) -> int:
-        return int(float(pos) * 1_000)
-
     for line in fobj:
         start, end, name = line.strip().split('\t')
         start, end = map(
