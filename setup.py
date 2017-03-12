@@ -10,14 +10,6 @@ def get_version(filename):
         return metadata['version']
 
 
-def get_requirements(filename='requirements.txt'):
-    requirements = []
-    with open(filename, 'rt') as f:
-        for line in f:
-            requirements.append(line.strip())
-    return requirements
-
-
 setup(
     name='abap',
     version=get_version(pathlib.Path('abap') / '__init__.py'),
@@ -26,8 +18,18 @@ setup(
     author_email='naglis@mailbox.org',
     license='MIT',
     packages=['abap'],
-    install_requires=get_requirements(),
-    tests_require=get_requirements('test_requirements.txt'),
+    install_requires=[
+        'PyYAML>=3.12,<3.20',
+        'attrs>=16.3.0,<17.0.0',
+        'blessings>=1.6,<1.7',
+        'jsonschema>=2.6.0,<3.0.0',
+        'mutagen>=1.36.0,<1.37.0',
+        'stevedore>=1.20.0,<1.30.0',
+        'tornado>=4.4.0,<4.5.0',
+    ],
+    tests_require=[
+        'tox',
+    ],
     entry_points={
         'console_scripts': [
             'abap = abap.main:main',
