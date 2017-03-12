@@ -1,10 +1,10 @@
 import pathlib
 
-from . import base
 from abap import abook, const
+from abap.commands import AbapCommand
 
 
-class InitCommand(base.AbapCommand):
+class InitCommand(AbapCommand):
 
     def get_parser(self, parser):
         parser.add_argument(

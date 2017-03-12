@@ -7,7 +7,7 @@ import attr
 import jsonschema
 import yaml
 
-from abap import const, utils, scan, tagutils
+from abap import const, scan, tagutils, utils
 
 
 chapter_schema = {

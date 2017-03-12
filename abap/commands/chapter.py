@@ -1,7 +1,7 @@
 import pathlib
 
-from . import base
 from abap import abook
+from abap.commands import AbapCommand
 
 
 def parse_audacity_chapters(fobj, ignore_end: bool = False):
@@ -16,7 +16,7 @@ def parse_audacity_chapters(fobj, ignore_end: bool = False):
         yield abook.Chapter(name, start, end)
 
 
-class ImportChaptersCommand(base.AbapCommand):
+class ImportChaptersCommand(AbapCommand):
 
     def get_parser(self, parser):
         parser.add_argument(

@@ -2,11 +2,11 @@ import pathlib
 
 import tornado.ioloop
 
-from . import base
 from abap import abook, app, const
+from abap.commands import AbapCommand
 
 
-class ServeCommand(base.AbapCommand):
+class ServeCommand(AbapCommand):
 
     def get_parser(self, parser):
         parser.add_argument(
