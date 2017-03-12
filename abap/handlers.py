@@ -124,7 +124,8 @@ class AbookRSSRenderer(object):
     def dumps(self) -> str:
         rss = self.render()
         return xml.dom.minidom.parseString(
-            ET.tostring(rss, encoding='utf-8')).toprettyxml()
+            ET.tostring(rss, encoding=const.DEFAULT_XML_ENCODING)
+        ).toprettyxml(encoding=const.DEFAULT_XML_ENCODING)
 
 
 class AbookHandler:
@@ -190,7 +191,10 @@ class RSSHandler(tornado.web.RequestHandler, AbookHandler):
     def get(self, slug: str):
         self.assert_slug(slug)
 
-        self.set_header('Content-Type', 'application/rss+xml; charset="utf-8"')
+        self.set_header(
+            'Content-Type',
+            f'application/rss+xml; charset="{const.DEFAULT_XML_ENCODING}"'
+        )
 
         base_url = f'{self.request.protocol}://{self.request.host}'
         renderer = AbookRSSRenderer(

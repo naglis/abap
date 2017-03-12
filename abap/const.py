@@ -11,6 +11,7 @@ NAMESPACES = {
 RSS_VERSION = '2.0'
 PSC_VERSION = '1.2'
 DEFAULT_LANG_CODE = 'en-us'
+DEFAULT_XML_ENCODING = 'utf-8'
 
 IMAGE_EXTENSIONS = ('jpg', 'jpeg', 'png')
 AUDIO_EXTENSIONS = ('mp3', 'ogg', 'm4a', 'm4b', 'opus')
