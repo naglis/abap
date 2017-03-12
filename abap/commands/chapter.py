@@ -1,10 +1,14 @@
 import pathlib
+import typing
 
 from abap import abook
 from abap.commands import AbapCommand
 
+ChapterGenerator = typing.Generator[abook.Chapter, None, None]
 
-def parse_audacity_chapters(fobj, ignore_end: bool = False):
+
+def parse_audacity_chapters(fobj: typing.io.TextIO,
+                            ignore_end: bool = False) -> ChapterGenerator:
 
     def convert_pos(pos: str) -> int:
         return int(float(pos) * 1_000)
