@@ -2,7 +2,9 @@
 abap
 ====
 
-Audiobooks as podcasts. 
+|Build Status|
+
+Audiobooks as podcasts.
 
 Features
 --------
@@ -25,3 +27,6 @@ Dependencies
 * jsonschema
 * mutagen
 * tornado
+
+.. |Build Status| image:: https://gitlab.com/naglis/abap/badges/master/build.svg
+   :target: https://gitlab.com/naglis/abap/commits/master
