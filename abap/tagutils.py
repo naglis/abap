@@ -1,19 +1,18 @@
 import pathlib
+import typing
 
-import attr
 import mutagen
 
 from abap import utils
 
 
-@attr.attrs(frozen=True)
-class Tags(object):
-    artist = attr.attrib()
-    album = attr.attrib()
-    title = attr.attrib()
-    duration = attr.attrib()
-    channels = attr.attrib()
-    sample_rate = attr.attrib()
+class Tags(typing.NamedTuple):
+    artist: str
+    album: str
+    title: str
+    duration: int
+    channels: int
+    sample_rate: typing.Optional[int]
 
 
 def single_item(tags):
