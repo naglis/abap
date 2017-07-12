@@ -17,7 +17,7 @@ IMAGE_EXTENSIONS = ('jpg', 'jpeg', 'png')
 AUDIO_EXTENSIONS = ('mp3', 'ogg', 'm4a', 'm4b', 'opus')
 COVER_FILENAMES = (r'cover', r'folder', r'cover[\s_-]?art')
 FANART_FILENAMES = (r'fan[\s_-]?art',)
-IGNORE_FILENAME = b'.ausis_ignore'
+IGNORE_FILENAME = b'.abap_ignore'
 
 DURATION_RE = r'^([0-9]{2,}):([0-5][0-9]):([0-5][0-9])(\.([0-9]{3}))?$'
 
