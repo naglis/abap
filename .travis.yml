@@ -15,8 +15,7 @@ matrix:
 addons:
     apt:
         packages:
-            - taglib
-
+            - libtag1-dev
 install:
     - pip install tox
 
