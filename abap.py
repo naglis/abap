@@ -251,8 +251,7 @@ ABOOK_SCHEMA = schema.Schema({
     schema.Optional('explicit'): bool,
     schema.Optional('items'): [
         ITEM_SCHEMA,
-    ]
-
+    ],
 })
 
 
