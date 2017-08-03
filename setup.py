@@ -12,38 +12,35 @@ def get_version(filename):
 
 setup(
     name='abap',
-    version=get_version(pathlib.Path('abap') / '__init__.py'),
-    description='',
+    version=get_version(pathlib.Path('abap.py')),
+    description='Audiobooks as podcasts',
     author='Naglis Jonaitis',
     author_email='naglis@mailbox.org',
     license='MIT',
-    packages=['abap'],
+    py_modules=[
+        'abap'
+    ],
     install_requires=[
         'PyYAML>=3.12,<3.20',
-        'attrs>=16.3.0,<17.0.0',
-        'blessings>=1.6,<1.7',
-        'jsonschema>=2.6.0,<3.0.0',
-        'mutagen>=1.36.0,<1.37.0',
-        'stevedore>=1.20.0,<1.30.0',
-        'tornado>=4.4.0,<4.5.0',
+        'pytaglib>=1.4.0,<2.0.0',
+        'schema>=0.6.0,<1.0.0',
+        'tornado>=4.4.0,<5.0.0',
     ],
     tests_require=[
         'tox',
     ],
     entry_points={
         'console_scripts': [
-            'abap = abap.main:main',
+            'abap = abap:main',
         ],
         'abap.command': [
-            'init = abap.commands:InitCommand',
-            'serve = abap.commands:ServeCommand',
-            'import_chapters = abap.commands:ImportChaptersCommand',
+            'init = abap:InitCommand',
+            'serve = abap:ServeCommand',
         ],
-        'abap.rss_renderer': [
-            'rss2 = abap.handlers:RSSRenderingPlugin',
-            'itunes = abap.handlers:ITunesRenderingPlugin',
-            'atom = abap.handlers:AtomRenderingPlugin',
-            'podlove_chapters = abap.handlers:PodloveChapterRenderingPlugin',
+        'abap.xml_renderer': [
+            'rss2 = abap:RSSRenderer',
+            'itunes = abap:ITunesRenderer',
+            'podlove_chapters = abap:PodloveChapterRenderer',
         ],
     },
     include_package_data=True,
@@ -51,22 +48,16 @@ setup(
         'Development Status :: 1 - Planning',
         'Environment :: Console',
         'Environment :: Web Environment',
-        'Intended Audience :: Developers',
         'Intended Audience :: Other Audience',
         'Natural Language :: English',
         'Operating System :: POSIX :: Linux',
-        'Operating System :: POSIX',
         'Programming Language :: Python :: 3 :: Only',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: Implementation :: CPython',
         'Programming Language :: Python',
         'Topic :: Internet :: WWW/HTTP :: WSGI :: Application',
-        'Topic :: Internet :: WWW/HTTP :: WSGI',
-        'Topic :: Internet :: WWW/HTTP',
-        'Topic :: Internet',
         'Topic :: Multimedia :: Sound/Audio :: Speech',
         'Topic :: Other/Nonlisted Topic',
     ],
-    zip_safe=False
 )

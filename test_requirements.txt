@@ -1,1 +1,5 @@
-tox
+pytest-cov
+flake8
+flake8-quotes
+flake8-comprehensions
+flake8-commas

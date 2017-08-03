@@ -1,0 +1,25 @@
+language: python
+sudo: false
+cache:
+    apt: true
+    directories:
+        - $HOME/.cache/pip
+
+matrix:
+    include:
+        - python: 3.6
+          env: {TOX_ENV: py36, COVERAGE: 1}
+        - python: 3.6
+          env: {TOX_ENV: flake8}
+
+install:
+    - pip install tox
+
+script:
+    - tox -e $TOX_ENV
+
+after_success:
+    - "[ ! -z $COVERAGE ] && bash <(curl -s https://codecov.io/bash) || true"
+
+notifications:
+    email: false

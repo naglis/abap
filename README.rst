@@ -6,8 +6,8 @@ abap
 
 Audiobooks as podcasts.
 
-Features
---------
+Planned Features
+----------------
 
 * Python 3.6+
 * Audiobook scanner with metadata support.
@@ -19,14 +19,5 @@ Features
 * Podlove Simple Chapters support.
 * Supported audio formats: Ogg Vorbis, Opus, MP3, MP4 (M4A, M4B).
 
-Dependencies
-------------
-
-* PyYAML
-* attrs
-* jsonschema
-* mutagen
-* tornado
-
-.. |Build Status| image:: https://gitlab.com/naglis/abap/badges/master/build.svg
-   :target: https://gitlab.com/naglis/abap/commits/master
+.. |Build Status| image:: https://travis-ci.org/naglis/abap.svg?branch=master
+   :target: https://travis-ci.org/naglis/abap
