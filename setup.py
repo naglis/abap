@@ -18,7 +18,7 @@ setup(
     author_email='naglis@mailbox.org',
     license='MIT',
     py_modules=[
-        'abap'
+        'abap',
     ],
     install_requires=[
         'PyYAML>=3.12,<3.20',

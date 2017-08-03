@@ -416,8 +416,7 @@ class RSSRenderer(XMLRenderer):
         pub_date.text = time.strftime(
             RFC822,
             (datetime.datetime.now() -
-                datetime.timedelta(minutes=sequence)).timetuple()
-        )
+                datetime.timedelta(minutes=sequence)).timetuple())
         yield pub_date
 
         '''
@@ -435,7 +434,7 @@ class RSSRenderer(XMLRenderer):
             'length': str(item['size']),
             'url': self.reverse_uri(
                 'stream', abook['slug'], str(sequence),
-                item['path'].suffix.lstrip('.'))
+                item['path'].suffix.lstrip('.')),
         })
 
 
@@ -492,7 +491,7 @@ class PodloveChapterRenderer(XMLRenderer):
                 psc('chapters'),
                 attrib={
                     'version': PSC_VERSION,
-                }
+                },
             )
             for c in item.get('chapters', []):
                 chapters.append(render_chapter(c))
@@ -550,7 +549,7 @@ def from_dir(directory: pathlib.Path) -> dict:
         directory, {
             'audio': audio_matcher,
             'cover': cover_matcher,
-        }
+        },
     )
     for audio_file in sorted(results.get('audio', [])):
         item = {
@@ -699,7 +698,7 @@ def get_tags(file_path: pathlib.Path) -> dict:
 
 def pretty_print_xml(tree: ET.Element) -> bytes:
     return xml.dom.minidom.parseString(
-        ET.tostring(tree, encoding=DEFAULT_XML_ENCODING)
+        ET.tostring(tree, encoding=DEFAULT_XML_ENCODING),
     ).toprettyxml(encoding=DEFAULT_XML_ENCODING)
 
 
@@ -812,8 +811,7 @@ class RSSHandler(AbookHandler):
             def url_reverse(endpoint, *args, **kwargs):
                 if endpoint:
                     return urllib.parse.urljoin(
-                        base_url, reverse_func(endpoint, *args, **kwargs)
-                    )
+                        base_url, reverse_func(endpoint, *args, **kwargs))
                 else:
                     return base_url
 
@@ -828,8 +826,8 @@ class RSSHandler(AbookHandler):
                     self.abook.directory,
                     self.abook,
                     reverse_url=reverse_func,
-                )
-            )
+                ),
+            ),
         )
 
 
