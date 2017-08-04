@@ -2,7 +2,7 @@
 abap
 ====
 
-|Build Status|
+|Build Status| |Code Coverage|
 
 Audiobooks as podcasts.
 
@@ -21,3 +21,5 @@ Planned Features
 
 .. |Build Status| image:: https://travis-ci.org/naglis/abap.svg?branch=master
    :target: https://travis-ci.org/naglis/abap
+.. |Code Coverage| image:: https://codecov.io/gh/naglis/abap/branch/master/graph/badge.svg
+   :target: https://codecov.io/gh/naglis/abap
