@@ -252,6 +252,7 @@ ABOOK_SCHEMA = schema.Schema({
     schema.Optional('items'): [
         ITEM_SCHEMA,
     ],
+    schema.Optional('cover'): str,
 })
 
 
