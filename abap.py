@@ -23,7 +23,7 @@ import tornado.web
 import yaml
 
 
-__version__ = '0.1.0'
+__version__ = '0.1.1a'
 DEFAULT_XML_ENCODING = 'utf-8'
 DEFAULT_PORT = 8000
 RFC822 = '%a, %d %b %Y %H:%M:%S +0000'
