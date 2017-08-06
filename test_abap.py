@@ -1,9 +1,11 @@
 import pathlib
 
 import pytest
+import schema
 
 from abap import (
     Abook,
+    ITEM_SCHEMA,
     __version__,
     format_duration,
     get_tags,
@@ -109,3 +111,17 @@ def test_merge_unknown_items_not_added(test_data):
     abook.merge_manifest(yaml_data)
     assert filename not in set(
         map(lambda i: i['path'].name, abook.get('items', [])))
+
+
+@pytest.mark.parametrize('item_dict, is_valid', [
+    ({'path': 'foo', 'authors': ['Foo']}, True),
+])
+def test_abook_item_schema(item_dict, is_valid):
+    try:
+        ITEM_SCHEMA.validate(item_dict)
+    except schema.SchemaError:
+        if is_valid:
+            pytest.fail('Valid data failed to validate')
+    else:
+        if not is_valid:
+            pytest.fail('Invalid data was validated')

@@ -227,6 +227,9 @@ CHAPTER_SCHEMA = schema.Schema({
 })
 ITEM_SCHEMA = schema.Schema({
     'path': str,
+    schema.Optional('authors'): [
+        str,
+    ],
     schema.Optional('sequence'): int,
     schema.Optional('explicit'): bool,
     schema.Optional('title'): str,
