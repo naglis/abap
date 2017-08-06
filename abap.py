@@ -89,6 +89,10 @@ common_parser.add_argument(
 )
 
 
+def non_empty_string(s):
+    return isinstance(s, str) and bool(s.strip())
+
+
 def make_filename_matcher(
         filenames=None,
         extensions=None) -> typing.Callable[[pathlib.Path], bool]:
@@ -226,7 +230,7 @@ CHAPTER_SCHEMA = schema.Schema({
     schema.Optional('url'): str,  # TODO(naglis): validate URL.
 })
 ITEM_SCHEMA = schema.Schema({
-    'path': str,
+    'path': non_empty_string,
     schema.Optional('authors'): [
         str,
     ],

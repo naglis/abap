@@ -115,6 +115,8 @@ def test_merge_unknown_items_not_added(test_data):
 
 @pytest.mark.parametrize('item_dict, is_valid', [
     ({'path': 'foo', 'authors': ['Foo']}, True),
+    ({'path': ''}, False),
+    ({'path': ' '}, False),
 ])
 def test_abook_item_schema(item_dict, is_valid):
     try:
