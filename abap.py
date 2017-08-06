@@ -686,8 +686,8 @@ def get_tags(file_path: pathlib.Path) -> dict:
                 'url': url,
             })
 
-    return {
-        'authors': multi(tags, 'ARTIST'),
+    authors = multi(tags, 'ARTIST')
+    result = {
         'album': first_or_None(tags, 'ALBUM'),
         'title': first_or_None(tags, 'TITLE') or file_path.stem,
         'categories': multi(tags, 'GENRE'),
@@ -695,6 +695,11 @@ def get_tags(file_path: pathlib.Path) -> dict:
         'duration': audiofile.length * 1000,
         'chapters': chapters,
     }
+    if authors:
+        result.update({
+            'authors': authors,
+        })
+    return result
 
 
 def pretty_print_xml(tree: ET.Element) -> bytes:
