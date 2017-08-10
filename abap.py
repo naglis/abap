@@ -107,6 +107,10 @@ def make_filename_matcher(
     return matcher
 
 
+def items_are_equal(a, b):
+    return len(a) == len(b) and sorted(a) == sorted(b)
+
+
 audio_matcher = make_filename_matcher(extensions=AUDIO_EXTENSIONS)
 cover_matcher = make_filename_matcher(
     filenames=COVER_FILENAMES, extensions=IMAGE_EXTENSIONS)
@@ -928,8 +932,7 @@ def _prepare_for_export(directory: pathlib.Path, d: dict) -> dict:
         authors.update(item.get('authors', []))
         item['path'] = relative_path(item['path'])
 
-    if (len(authors) == len(result.get('authors', [])) and
-            sorted(authors) == sorted(result.get('authors', []))):
+    if items_are_equal(authors, result.get('authors', [])):
         for item in result.get('items', []):
             item.pop('authors', None)
 
