@@ -172,18 +172,6 @@ def labeled_scan_iter(
             pass
 
 
-def make_item_sorter(items):
-    original_sequences = {
-        item['path']: idx
-        for idx, item in enumerate(sorted(items, key=by_path), start=1)
-    }
-
-    def key(item):
-        return item.get('sequence', original_sequences[item['path']])
-
-    return key
-
-
 def slugify(s: str, replacement='_') -> str:
     r, prev = [], None
     for c in s:
@@ -309,15 +297,7 @@ class Abook(collections.abc.Mapping):
         if yaml_data:
             yaml_data = ABOOK_SCHEMA.validate(yaml_data)
 
-        d = merge(self.directory, self._d, yaml_data)
-
-        # Sort by sequence.
-        items = d.get('items', [])
-        d.update({
-            'items': sorted(items, key=make_item_sorter(items)),
-        })
-
-        self._d = d
+        self._d = merge(self.directory, self._d, yaml_data)
 
     @classmethod
     def from_directory(cls, directory: pathlib.Path):
@@ -515,6 +495,7 @@ def merge(directory: pathlib.Path, data: typing.MutableMapping,
 
     result = copy.deepcopy(data)
     yaml_data = copy.deepcopy(yaml_data)
+    yaml_items = collections.OrderedDict()
 
     def override(key):
         if key in yaml_data:
@@ -532,8 +513,9 @@ def merge(directory: pathlib.Path, data: typing.MutableMapping,
     for key in ('title', 'authors', 'categories', 'description', 'slug'):
         override(key)
 
-    for item in yaml_data.get('items', []):
+    for idx, item in enumerate(yaml_data.get('items', [])):
         item_path = directory / item['path']
+        yaml_items[item_path] = idx
 
         current_item = items_by_path.get(item_path)
         if current_item is None:
@@ -547,6 +529,25 @@ def merge(directory: pathlib.Path, data: typing.MutableMapping,
                 overrides[k] = item[k]
         if overrides:
             current_item.update(overrides)
+
+    # Decide sorting order.
+    if len(items_by_path) == len(yaml_items):
+        LOG.debug(
+            'Manifest contains all the items, items without sequence will be '
+            'sorted by their order in the manifest')
+        sequences = dict(
+            [reversed(k) for k in enumerate(yaml_items)])
+    else:
+        LOG.debug('Items without sequence will be sorted by path')
+        sequences = dict(
+            [reversed(k) for k in enumerate(sorted(items_by_path))])
+
+    def sort_key(item):
+        return item.get('sequence', sequences[item['path']])
+
+    result.update({
+        'items': sorted(result.get('items', []), key=sort_key),
+    })
 
     return result
 
