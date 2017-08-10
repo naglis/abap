@@ -515,7 +515,6 @@ def merge(directory: pathlib.Path, data: typing.MutableMapping,
 
     for idx, item in enumerate(yaml_data.get('items', [])):
         item_path = directory / item['path']
-        yaml_items[item_path] = idx
 
         current_item = items_by_path.get(item_path)
         if current_item is None:
@@ -530,17 +529,20 @@ def merge(directory: pathlib.Path, data: typing.MutableMapping,
         if overrides:
             current_item.update(overrides)
 
+        # Retain index for sorting purposes.
+        yaml_items[item_path] = idx
+
     # Decide sorting order.
     if len(items_by_path) == len(yaml_items):
         LOG.debug(
             'Manifest contains all the items, items without sequence will be '
             'sorted by their order in the manifest')
         sequences = dict(
-            [reversed(k) for k in enumerate(yaml_items)])
+            [reversed(k) for k in enumerate(yaml_items, start=1)])
     else:
         LOG.debug('Items without sequence will be sorted by path')
         sequences = dict(
-            [reversed(k) for k in enumerate(sorted(items_by_path))])
+            [reversed(k) for k in enumerate(sorted(items_by_path), start=1)])
 
     def sort_key(item):
         return item.get('sequence', sequences[item['path']])
