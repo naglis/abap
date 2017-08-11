@@ -6,7 +6,9 @@ import schema
 from abap import (
     Abook,
     ITEM_SCHEMA,
+    RSSRenderer,
     __version__,
+    build_rss,
     format_duration,
     get_tags,
     main,
@@ -24,6 +26,31 @@ def here():
 @pytest.fixture
 def test_data():
     return here() / 'test_data'
+
+
+@pytest.fixture
+def fake_abook():
+    fake_abook_data = {
+        'title': 'Test Abook',
+        'slug': 'test',
+        'description': 'Fake desc',
+        'authors': [
+            'Jane Doe',
+            'John Smith',
+        ],
+        'categories': [
+            'CAT1',
+        ],
+        'items': [
+            {
+                'path': test_data() / 'empty.opus',
+                'title': 'Some title',
+                'mimetype': 'audio/ogg',
+                'size': 123,
+            },
+        ],
+    }
+    return Abook(test_data(), fake_abook_data)
 
 
 @pytest.mark.parametrize('test_input, expected', [
@@ -127,3 +154,24 @@ def test_abook_item_schema(item_dict, is_valid):
     else:
         if not is_valid:
             pytest.fail('Invalid data was validated')
+
+
+def test_rss_renderer(fake_abook):
+    rss = build_rss(
+        fake_abook.directory,
+        fake_abook,
+        renderers={
+            'rss': RSSRenderer,
+        },
+    )
+    items = rss.findall('./channel/item')
+    assert len(items) == 1
+
+    item = items[0]
+    assert item.findtext('title') == 'Some title'
+    assert item.findtext('guid') == '1'
+
+    enclosure_attrs = item.find('enclosure').attrib
+    assert enclosure_attrs['length'] == '123'
+    assert enclosure_attrs['type'] == 'audio/ogg'
+    assert enclosure_attrs['url'] == 'stream'

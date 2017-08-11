@@ -735,8 +735,10 @@ def load_renderers(entry_point_name='abap.xml_renderer'):
 
 def build_rss(directory: pathlib.Path,
               abook: typing.Mapping,
-              reverse_url=lambda n, *a: n) -> ET.Element:
-    renderers = load_renderers()
+              reverse_url=lambda n, *a: n,
+              renderers: typing.Optional[typing.Mapping[
+                  str, typing.Type[XMLRenderer]]] = None) -> ET.Element:
+    renderers = renderers or load_renderers()
 
     extensions = collections.OrderedDict([
         (n, cls(reverse_url)) for n, cls in renderers.items()
