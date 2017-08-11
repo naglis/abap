@@ -736,7 +736,6 @@ def load_renderers(entry_point_name='abap.xml_renderer'):
 def build_rss(directory: pathlib.Path,
               abook: typing.Mapping,
               reverse_url=lambda n, *a: n) -> ET.Element:
-    # TODO(naglis): load from setuptools entry-points using stevedore.
     renderers = load_renderers()
 
     extensions = collections.OrderedDict([
