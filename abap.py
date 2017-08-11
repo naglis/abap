@@ -537,12 +537,11 @@ def merge(directory: pathlib.Path, data: typing.MutableMapping,
         LOG.debug(
             'Manifest contains all the items, items without sequence will be '
             'sorted by their order in the manifest')
-        sequences = dict(
-            [reversed(k) for k in enumerate(yaml_items, start=1)])
+        sequences = {p: i for i, p in enumerate(yaml_items, start=1)}
     else:
         LOG.debug('Items without sequence will be sorted by path')
-        sequences = dict(
-            [reversed(k) for k in enumerate(sorted(items_by_path), start=1)])
+        sequences = {
+            p: i for i, p in enumerate(sorted(items_by_path), start=1)}
 
     def sort_key(item):
         return item.get('sequence', sequences[item['path']])
