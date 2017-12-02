@@ -136,16 +136,6 @@ psc = make_ns_getter(PSC_NS)
 mimetypes.add_type('audio/x-m4b', '.m4b')
 
 
-def render_chapter(chapter: dict) -> ET.Element:
-    return ET.Element(
-        psc('chapter'),
-        attrib={
-            'title': chapter['name'],
-            'start': format_duration(chapter['start']),
-        },
-    )
-
-
 def labeled_scan(path: pathlib.Path,
                  label_funcs: typing.Dict[str, LabelFunction]):
     return {
@@ -319,6 +309,13 @@ class XMLRenderer(metaclass=abc.ABCMeta):
         else:
             return handler
 
+    def el(self, tag: str,
+           text: typing.Optional[str] = None,
+           **attrib: typing.Dict[str, str]) -> ET.Element:
+        element = ET.Element(tag, attrib=attrib)
+        element.text = text
+        return element
+
     @property
     def namespaces(self) -> typing.List[XMLNamespace]:
         return []
@@ -336,45 +333,30 @@ class XMLRenderer(metaclass=abc.ABCMeta):
 class RSSRenderer(XMLRenderer):
 
     def render_channel(self, abook: Abook) -> ETGenerator:
-        generator = ET.Element('generator')
-        generator.text = f'abap/{__version__}'
-        yield generator
+        yield self.el('generator', f'abap/{__version__}')
 
-        title = ET.Element('title')
-        title.text = abook['title']
-        yield title
+        yield self.el('title', abook['title'])
 
-        link = ET.Element('link')
-        link.text = self.reverse_uri(None)
-        yield link
+        yield self.el('link', self.reverse_uri(None))
 
         if abook.get('description'):
-            desc = ET.Element('description')
-            desc.text = abook['description']
-            yield desc
+            yield self.el('description', abook['description'])
 
         for category in abook.get('categories', []):
-            elem = ET.Element('category')
-            elem.text = category
-            yield elem
+            yield self.el('category', category)
         '''
-        lang = ET.Element('language')
-        lang.text = abook.lang
-        yield lang
+        yield self.el('language', abook.lang)
 
         if abook.has_manifest:
-            pub_date = ET.Element('pubDate')
-            pub_date.text = time.strftime(
-                RFC822, abook.publication_date.timetuple(),
-            )
-            yield pub_date
+            yield self.el('pubDate', time.strftime(
+                RFC822, abook.publication_date.timetuple()))
         '''
 
         cover_url = self.reverse_uri('cover', abook['slug'])
-        image = ET.Element('image')
-        ET.SubElement(image, 'url').text = cover_url
-        ET.SubElement(image, 'title').text = abook['title']
-        ET.SubElement(image, 'link').text = self.reverse_uri(None)
+        image = self.el('image')
+        image.append(self.el('url', cover_url))
+        image.append(self.el('title', abook['title']))
+        image.append(self.el('link', self.reverse_uri(None)))
         yield image
 
         if abook.has_manifest:
@@ -382,32 +364,23 @@ class RSSRenderer(XMLRenderer):
                 abook.manifest.stat().st_mtime)
         else:
             dt = datetime.datetime.now()
-        build_date = ET.Element('lastBuildDate')
-        build_date.text = time.strftime(RFC822, dt.timetuple())
-        yield build_date
+        yield self.el('lastBuildDate', time.strftime(RFC822, dt.timetuple()))
 
-        ttl = ET.Element('ttl')
-        ttl.text = str(TTL)
-        yield ttl
+        yield self.el('ttl', str(TTL))
 
     def render_item(self, abook: Abook, item: dict,
                     sequence: int = 0) -> ETGenerator:
-        title = ET.Element('title')
-        title.text = item['title']
-        yield title
+        yield self.el('title', item['title'])
 
-        guid = ET.Element('guid', attrib={'isPermaLink': 'false'})
-        guid.text = str(sequence)
-        yield guid
+        yield self.el('guid', str(sequence), isPermaLink='false')
 
         # FIXME: this is a bit of a workaround in order to help sorting the
         # episodes in the podcast client.
-        pub_date = ET.Element('pubDate')
-        pub_date.text = time.strftime(
+        pub_date = time.strftime(
             RFC822,
             (datetime.datetime.now() -
                 datetime.timedelta(minutes=sequence)).timetuple())
-        yield pub_date
+        yield self.el('pubDate', pub_date)
 
         '''
         if i.subtitle:
@@ -419,13 +392,15 @@ class RSSRenderer(XMLRenderer):
                 channel, itunes('summary')).text = i.summary
         '''
 
-        yield ET.Element('enclosure', attrib={
-            'type': item['mimetype'],
-            'length': str(item['size']),
-            'url': self.reverse_uri(
+        yield self.el(
+            'enclosure',
+            type=item['mimetype'],
+            length=str(item['size']),
+            url=self.reverse_uri(
                 'stream', abook['slug'], str(sequence),
-                item['path'].suffix.lstrip('.')),
-        })
+                item['path'].suffix.lstrip('.'),
+            ),
+        )
 
 
 class ITunesRenderer(XMLRenderer):
@@ -437,29 +412,21 @@ class ITunesRenderer(XMLRenderer):
         ]
 
     def render_channel(self, abook: Abook) -> ETGenerator:
-        author = ET.Element(itunes('author'))
-        author.text = ', '.join(abook['authors'])
-        yield author
+        yield self.el(itunes('author'), ', '.join(abook['authors']))
 
         for category in abook.get('categories', []):
-            category_elem = ET.Element(itunes('category'))
-            category_elem.text = category
-            yield category_elem
+            yield self.el(itunes('category'), category)
 
-        cover_url = self.reverse_uri('cover', abook['slug'])
-        image = ET.Element(itunes('image'), attrib={'href': cover_url})
-        yield image
+        yield self.el(
+            itunes('image'), href=self.reverse_uri('cover', abook['slug']))
 
     def render_item(self, abook: Abook, item: dict,
                     sequence: int = 0) -> ETGenerator:
-        duration = ET.Element(itunes('duration'))
-        duration.text = format_duration(item['duration'])
-        yield duration
+        yield self.el(itunes('duration'), format_duration(item['duration']))
 
         if 'explicit' in item:
-            explicit = ET.Element(itunes('explicit'))
-            explicit.text = 'Yes' if item['explicit'] else 'No'
-            yield explicit
+            yield self.el(
+                itunes('explicit'), 'Yes' if item['explicit'] else 'No')
 
 
 class PodloveChapterRenderer(XMLRenderer):
@@ -477,14 +444,16 @@ class PodloveChapterRenderer(XMLRenderer):
     def render_item(self, abook: Abook, item: dict,
                     sequence: int = 0) -> ETGenerator:
         if item.get('chapters'):
-            chapters = ET.Element(
+            chapters = self.el(
                 psc('chapters'),
-                attrib={
-                    'version': PSC_VERSION,
-                },
+                version=PSC_VERSION,
             )
             for c in item.get('chapters', []):
-                chapters.append(render_chapter(c))
+                chapters.append(self.el(
+                    psc('chapter'),
+                    title=c['name'],
+                    start=format_duration(c['start']),
+                ))
             yield chapters
 
 
