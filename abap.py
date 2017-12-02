@@ -89,7 +89,7 @@ common_parser.add_argument(
 )
 
 
-def non_empty_string(s):
+def non_empty_string(s: typing.Any) -> bool:
     return isinstance(s, str) and bool(s.strip())
 
 
@@ -107,7 +107,7 @@ def make_filename_matcher(
     return matcher
 
 
-def items_are_equal(a, b):
+def items_are_equal(a: typing.Sequence, b: typing.Sequence) -> bool:
     return len(a) == len(b) and sorted(a) == sorted(b)
 
 
