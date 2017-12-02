@@ -77,7 +77,7 @@ TTL = 60 * 24 * 365
 
 # Custom type hints
 ScanResult = typing.Generator[typing.Tuple[str, pathlib.Path], None, None]
-LabelFunction = typing.Callable[[str], bool]
+LabelFunction = typing.Callable[[pathlib.Path], bool]
 ETGenerator = typing.Generator[ET.Element, None, None]
 
 
@@ -93,9 +93,7 @@ def non_empty_string(s: typing.Any) -> bool:
     return isinstance(s, str) and bool(s.strip())
 
 
-def make_filename_matcher(
-        filenames=None,
-        extensions=None) -> typing.Callable[[pathlib.Path], bool]:
+def make_filename_matcher(filenames=None, extensions=None) -> LabelFunction:
     extensions = {f'.{e.lower()}' for e in (extensions or [])}
     names = {n.lower() for n in (filenames or [])}
 
