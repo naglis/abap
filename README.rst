@@ -2,7 +2,7 @@
 abap
 ====
 
-|Build Status| |Code Coverage|
+|Build Status| |Code Coverage| |Known Vulnerabilities|
 
 Audiobooks as podcasts.
 
@@ -23,3 +23,5 @@ Planned Features
    :target: https://travis-ci.org/naglis/abap
 .. |Code Coverage| image:: https://codecov.io/gh/naglis/abap/branch/master/graph/badge.svg
    :target: https://codecov.io/gh/naglis/abap
+.. |Known Vulnerabilities| image:: https://snyk.io/test/github/naglis/abap/badge.svg
+   :target: https://snyk.io/test/github/naglis/abap
