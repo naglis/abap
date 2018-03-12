@@ -12,7 +12,6 @@ import string
 import sys
 import time
 import typing
-import urllib.parse
 import xml.dom.minidom
 import xml.etree.cElementTree as ET
 
@@ -23,7 +22,6 @@ import aiohttp.web
 import multidict
 import schema
 import taglib
-import yarl
 
 __version__ = '0.1.1a'
 DEFAULT_XML_ENCODING = 'utf-8'
