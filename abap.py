@@ -769,7 +769,7 @@ async def episode_handler(request):
         item['path'],
         headers=multidict.MultiDict({
             'Content-Type': item['mimetype'],
-        })
+        }),
     )
 
 
