@@ -174,4 +174,4 @@ def test_rss_renderer(fake_abook):
     enclosure_attrs = item.find('enclosure').attrib
     assert enclosure_attrs['length'] == '123'
     assert enclosure_attrs['type'] == 'audio/ogg'
-    assert enclosure_attrs['url'] == 'stream'
+    assert enclosure_attrs['url'] == 'episode'

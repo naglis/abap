@@ -17,11 +17,13 @@ import xml.dom.minidom
 import xml.etree.cElementTree as ET
 
 import pkg_resources
-import schema
-import taglib
-import tornado.web
 import yaml
 
+import aiohttp.web
+import multidict
+import schema
+import taglib
+import yarl
 
 __version__ = '0.1.1a'
 DEFAULT_XML_ENCODING = 'utf-8'
@@ -87,13 +89,23 @@ common_parser.add_argument(
     type=pathlib.Path,
     default='.',
 )
+common_parser.add_argument(
+    '--ignore',
+    type=pathlib.Path,
+    help='files to ignore during scan',
+    action='append',
+    default=[],
+)
 
 
 def non_empty_string(s: typing.Any) -> bool:
     return isinstance(s, str) and bool(s.strip())
 
 
-def make_filename_matcher(filenames=None, extensions=None) -> LabelFunction:
+def make_filename_matcher(
+        filenames: typing.Optional[typing.Iterable[str]] = None,
+        extensions: typing.Optional[typing.Iterable[str]] = None,
+) -> LabelFunction:
     extensions = {f'.{e.lower()}' for e in (extensions or [])}
     names = {n.lower() for n in (filenames or [])}
 
@@ -272,7 +284,7 @@ class Abook(collections.abc.Mapping):
     def has_manifest(self) -> bool:
         return self.manifest.is_file()
 
-    def merge_manifest(self, yaml_data=None):
+    def merge_manifest(self, yaml_data=None) -> None:
         yaml_data = yaml_data or {}
 
         if not yaml_data:
@@ -288,14 +300,16 @@ class Abook(collections.abc.Mapping):
         self._d = merge(self.directory, self._d, yaml_data)
 
     @classmethod
-    def from_directory(cls, directory: pathlib.Path):
-        d = from_dir(directory)
+    def from_directory(
+            cls, directory: pathlib.Path,
+            ignore_files: typing.Optional[typing.Set[pathlib.Path]] = None):
+        d = from_dir(directory, ignore_files or set())
         return cls(directory, d)
 
 
 class XMLNamespace(typing.NamedTuple):
-    prefix: str
-    uri: str
+    prefix: str  # noqa: E701. See also: https://git.io/vS5GZ
+    uri: str  # noqa
 
 
 class XMLRenderer(metaclass=abc.ABCMeta):
@@ -303,9 +317,9 @@ class XMLRenderer(metaclass=abc.ABCMeta):
     def __init__(self, uri_func: typing.Callable = None) -> None:
         self.uri_func = uri_func
 
-    def reverse_uri(self, handler: typing.Optional[str], *args, **kwargs):
+    def reverse_uri(self, handler: typing.Optional[str], **kwargs):
         if callable(self.uri_func):
-            return self.uri_func(handler, *args, **kwargs)
+            return self.uri_func(handler, **kwargs)
         else:
             return handler
 
@@ -352,7 +366,7 @@ class RSSRenderer(XMLRenderer):
                 RFC822, abook.publication_date.timetuple()))
         '''
 
-        cover_url = self.reverse_uri('cover', abook['slug'])
+        cover_url = self.reverse_uri('cover', slug=abook['slug'])
         image = self.el('image')
         image.append(self.el('url', cover_url))
         image.append(self.el('title', abook['title']))
@@ -397,8 +411,10 @@ class RSSRenderer(XMLRenderer):
             type=item['mimetype'],
             length=str(item['size']),
             url=self.reverse_uri(
-                'stream', abook['slug'], str(sequence),
-                item['path'].suffix.lstrip('.'),
+                'episode',
+                slug=abook['slug'],
+                sequence=str(sequence),
+                ext=item['path'].suffix.lstrip('.'),
             ),
         )
 
@@ -418,7 +434,8 @@ class ITunesRenderer(XMLRenderer):
             yield self.el(itunes('category'), category)
 
         yield self.el(
-            itunes('image'), href=self.reverse_uri('cover', abook['slug']))
+            itunes('image'),
+            href=self.reverse_uri('cover', slug=abook['slug']))
 
     def render_item(self, abook: Abook, item: dict,
                     sequence: int = 0) -> ETGenerator:
@@ -520,7 +537,7 @@ def merge(directory: pathlib.Path, data: typing.MutableMapping,
     return result
 
 
-def from_dir(directory: pathlib.Path) -> dict:
+def from_dir(directory: pathlib.Path, ignore_files) -> dict:
     authors, albums, descriptions, categories = map(
         lambda i: collections.OrderedDict(), range(4))
     all_non_explicit = True
@@ -533,6 +550,8 @@ def from_dir(directory: pathlib.Path) -> dict:
         },
     )
     for audio_file in sorted(results.get('audio', [])):
+        if ignore_files and audio_file.resolve(strict=True) in ignore_files:
+            continue
         item = {
             'authors': [
                 'Unknown author',
@@ -608,7 +627,7 @@ def from_dir(directory: pathlib.Path) -> dict:
             LOG.warn('Multiple values for description found. '
                      'Will use the first one')
         global_data.update({
-            'description': first(descriptions),
+            'description': first(list(descriptions.keys())),
         })
 
     if categories:
@@ -701,10 +720,9 @@ def load_renderers(entry_point_name='abap.xml_renderer'):
 
 
 def build_rss(directory: pathlib.Path,
-              abook: typing.Mapping,
-              reverse_url=lambda n, *a: n,
+              abook: Abook, reverse_url=lambda n, **kw: n,
               renderers: typing.Optional[typing.Mapping[
-                  str, typing.Type[XMLRenderer]]] = None) -> ET.Element:
+                  str, typing.Type[XMLRenderer]]]=None) -> ET.Element:
     renderers = renderers or load_renderers()
 
     extensions = collections.OrderedDict([
@@ -735,109 +753,92 @@ def build_rss(directory: pathlib.Path,
     return rss
 
 
-class AbookHandler(tornado.web.RequestHandler):
+async def episode_handler(request):
+    slug, sequence, ext = operator.itemgetter('slug', 'sequence', 'ext')(
+        request.match_info)
+    abook = request.app['abooks'].get(slug)
+    if not abook:
+        raise aiohttp.web.HTTPNotFound()
 
-    @property
-    def abook(self) -> Abook:
-        return self.application.abook
+    try:
+        item = abook.get('items', [])[int(sequence) - 1]
+    except ValueError:
+        raise aiohttp.web.HTTPBadRequest()
+    except IndexError:
+        raise aiohttp.web.HTTPNotFound()
 
-    def slug_exists(self, slug: str) -> bool:
-        return self.abook.get('slug') == slug
-
-    def assert_slug(self, slug: str):
-        if not self.slug_exists(slug):
-            raise tornado.web.HTTPError(status_code=400)
-
-
-class StreamHandler(tornado.web.StaticFileHandler, AbookHandler):
-
-    def head(self, slug: str, sequence: str, ext: str):
-        return self.get(slug, sequence, ext, include_body=False)
-
-    def get(self, slug: str, sequence: str, ext: str,
-            include_body: bool = True):
-        self.assert_slug(slug)
-
-        try:
-            item = self.abook.get('items', [])[int(sequence) - 1]
-        except ValueError:
-            raise tornado.web.HTTPError(status_code=400)
-        except IndexError:
-            raise tornado.web.HTTPError(status_code=404)
-
-        self.set_header('Content-Type', item['mimetype'])
-        return super().get(item['path'], include_body=include_body)
+    return aiohttp.web.FileResponse(
+        item['path'],
+        headers=multidict.MultiDict({
+            'Content-Type': item['mimetype'],
+        })
+    )
 
 
-class CoverHandler(tornado.web.StaticFileHandler, AbookHandler):
+def make_url_reverse(request):
+    app = request.app
+    base_url = request.url.origin()
 
-    def slug_exists(self, slug):
-        return super().slug_exists(slug) and self.abook.get('cover')
+    def url_reverse(resource, **kwargs):
+        if resource:
+            return str(base_url.join(app.router[resource].url_for(**kwargs)))
+        else:
+            return str(base_url)
 
-    def get(self, slug: str):
-        self.assert_slug(slug)
-        cover = self.abook.get('cover')
-        self.set_header(
-            'Content-Type', first(mimetypes.guess_type(str(cover))),
-        )
-        return super().get(cover)
+    return url_reverse
 
 
-class RSSHandler(AbookHandler):
+async def rss_feed_handler(request):
+    slug = request.match_info['slug']
+    abook = request.app['abooks'].get(slug)
+    if not abook:
+        raise aiohttp.web.HTTPNotFound()
 
-    def get(self, slug: str):
-        self.assert_slug(slug)
+    return aiohttp.web.Response(
+        body=pretty_print_xml(build_rss(
+            abook.directory,
+            abook,
+            reverse_url=make_url_reverse(request),
+        )),
+        headers=multidict.MultiDict({
+            'Content-Type': (
+                f'application/rss+xml; charset="{DEFAULT_XML_ENCODING}"'),
+        }),
+    )
 
-        self.set_header(
-            'Content-Type',
-            f'application/rss+xml; charset="{DEFAULT_XML_ENCODING}"',
-        )
 
-        def make_url_reverse(reverse_func, base_url):
-
-            def url_reverse(endpoint, *args, **kwargs):
-                if endpoint:
-                    return urllib.parse.urljoin(
-                        base_url, reverse_func(endpoint, *args, **kwargs))
-                else:
-                    return base_url
-
-            return url_reverse
-
-        base_url = f'{self.request.protocol}://{self.request.host}'
-        reverse_func = make_url_reverse(self.reverse_url, base_url)
-
-        self.write(
-            pretty_print_xml(
-                build_rss(
-                    self.abook.directory,
-                    self.abook,
-                    reverse_url=reverse_func,
-                ),
-            ),
-        )
+async def cover_handler(request):
+    slug = request.match_info['slug']
+    abook = request.app['abooks'].get(slug)
+    if not (abook and abook.get('cover')):
+        raise aiohttp.web.HTTPNotFound()
+    cover = abook.get('cover')
+    return aiohttp.web.FileResponse(
+        cover,
+        headers=multidict.MultiDict({
+            'Content-Type': first(mimetypes.guess_type(str(cover))),
+        }),
+    )
 
 
 def make_app(abook: Abook):
-    app = tornado.web.Application([
-        tornado.web.URLSpec(
-            r'/(?P<slug>\w+)',
-            RSSHandler,
-            name='rss',
-        ),
-        tornado.web.URLSpec(
-            r'/(?P<slug>\w+)/stream/(?P<sequence>\d+).(?P<ext>[\w]{1,})',
-            StreamHandler,
-            {'path': abook.directory},
-            name='stream',
-        ),
-        tornado.web.URLSpec(
-            r'/(?P<slug>\w+)/cover',
-            CoverHandler,
-            {'path': abook.directory},
-            name='cover',
-        ),
-    ])
+    app = aiohttp.web.Application()
+    # FIXME(naglis): Make slug and ext more strict.
+    rss_feed = app.router.add_resource(
+        '/abook/{slug}/feed/rss', name='rss_feed')
+    rss_feed.add_route('GET', rss_feed_handler)
+
+    episode = app.router.add_resource(
+        '/abook/{slug}/episode/{sequence:\d+}.{ext}', name='episode',
+    )
+    episode.add_route('GET', episode_handler)
+
+    cover = app.router.add_resource('/abook/{slug}/cover', name='cover')
+    cover.add_route('GET', cover_handler)
+
+    app['abooks'] = {
+        abook['slug']: abook,
+    }
     app.abook = abook
     return app
 
@@ -926,7 +927,8 @@ class InitCommand(AbapCommand):
         )
 
     def take_action(self, args):
-        abook = Abook.from_directory(args.directory)
+        ignore_files = {p.resolve(strict=True) for p in args.ignore}
+        abook = Abook.from_directory(args.directory, ignore_files)
         d = _prepare_for_export(args.directory, dict(abook))
 
         yaml.safe_dump(
@@ -955,12 +957,11 @@ class ServeCommand(AbapCommand):
         )
 
     def take_action(self, args):
-        abook = Abook.from_directory(args.directory)
+        abook = Abook.from_directory(args.directory, args.ignore)
         abook.merge_manifest()
         app = make_app(abook)
         LOG.info(f'Serving on port {args.port}')
-        app.listen(args.port)
-        tornado.ioloop.IOLoop.current().start()
+        aiohttp.web.run_app(app, port=args.port)
 
 
 def main(argv=None):
