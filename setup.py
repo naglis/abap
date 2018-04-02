@@ -24,7 +24,7 @@ setup(
         'PyYAML>=3.12,<3.20',
         'pytaglib>=1.4.0,<2.0.0',
         'schema>=0.6.0,<1.0.0',
-        'aiohttp>=3.0.7,<4.0.0',
+        'aiohttp>=3.1.1,<4.0.0',
     ],
     tests_require=[
         'tox',
