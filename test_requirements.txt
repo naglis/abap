@@ -1,5 +1,5 @@
 pytest-cov==2.5.1
-flake8
+flake8==3.5.0
 flake8-quotes
 flake8-comprehensions
 flake8-commas
