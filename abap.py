@@ -629,18 +629,15 @@ def from_dir(directory: pathlib.Path, ignore_files) -> dict:
     return global_data
 
 
-def first_or_empty_string(dict_: typing.Mapping, key) -> str:
-    v = dict_.get(key)
-    if isinstance(v, list):
-        return first(v)
-    return ''
-
-
-def first_or_None(dict_: typing.Mapping, key) -> typing.Optional[str]:
-    v = dict_.get(key)
-    if isinstance(v, list):
-        return first(v)
-    return None
+def first_or_default(mapping: typing.Mapping, key,
+                     default: typing.Any = None) -> typing.Any:
+    value = mapping.get(key)
+    if isinstance(value, collections.abc.Sequence):
+        try:
+            return first(value)
+        except IndexError:
+            return default
+    return default
 
 
 def get_tags(file_path: pathlib.Path) -> dict:
@@ -669,10 +666,10 @@ def get_tags(file_path: pathlib.Path) -> dict:
 
     authors = multi(tags, 'ARTIST')
     result = {
-        'album': first_or_None(tags, 'ALBUM'),
-        'title': first_or_None(tags, 'TITLE') or file_path.stem,
+        'album': first_or_default(tags, 'ALBUM'),
+        'title': first_or_default(tags, 'TITLE') or file_path.stem,
         'categories': multi(tags, 'GENRE'),
-        'description': first_or_empty_string(tags, 'GENRE'),
+        'description': first_or_default(tags, 'GENRE', default=''),
         'duration': audiofile.length * 1000,
         'chapters': chapters,
     }
