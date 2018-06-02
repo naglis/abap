@@ -14,7 +14,6 @@ from abap import (
     main,
     merge,
     parse_duration,
-    slugify,
 )
 
 
@@ -51,17 +50,6 @@ def fake_abook():
         ],
     }
     return Abook(test_data(), fake_abook_data)
-
-
-@pytest.mark.parametrize('test_input, expected', [
-    ('foo+', 'foo'),
-    ('+foo', 'foo'),
-    ('foo++bar', 'foo_bar'),
-    ('foo (bar)', 'foo_bar'),
-    ('Foo bar 9', 'foo_bar_9'),
-])
-def test_slugify(test_input, expected):
-    assert slugify(test_input) == expected
 
 
 @pytest.mark.parametrize('input, error_cls, expected', [

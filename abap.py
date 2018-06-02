@@ -8,7 +8,6 @@ import logging
 import mimetypes
 import operator
 import pathlib
-import string
 import sys
 import time
 import typing
@@ -21,6 +20,7 @@ import yaml
 import aiohttp.web
 import multidict
 import schema
+import slugify
 import taglib
 
 __version__ = '0.1.1a'
@@ -32,7 +32,6 @@ PSC_NS = 'http://podlove.org/simple-chapters'
 RSS_VERSION = '2.0'
 PSC_VERSION = '1.2'
 MANIFEST_FILENAME = 'abap.yaml'
-ALPHANUMERIC = frozenset(string.ascii_letters + string.digits)
 AUDIO_EXTENSIONS = (
     'm4a',
     'm4b',
@@ -168,21 +167,6 @@ def labeled_scan_iter(
                     yield label, child
         else:
             pass
-
-
-def slugify(s: str, replacement='_') -> str:
-    r, prev = [], None
-    for c in s:
-        if c in ALPHANUMERIC:
-            r.append(c)
-            prev = c
-        else:
-            if prev == replacement:
-                continue
-            r.append(replacement)
-            prev = replacement
-
-    return ''.join(r).strip(replacement).lower()
 
 
 def parse_duration(ds: str) -> int:
@@ -490,7 +474,7 @@ def merge(directory: pathlib.Path, data: typing.MutableMapping,
     if ('title' in yaml_data and not
             yaml_data['title'] == data['title'] and
             'slug' not in yaml_data):
-        result['slug'] = slugify(yaml_data['title'])
+        result['slug'] = slugify.slugify(yaml_data['title'])
 
     for key in ('title', 'authors', 'categories', 'description', 'slug'):
         override(key)
@@ -639,7 +623,7 @@ def from_dir(directory: pathlib.Path, ignore_files) -> dict:
         })
 
     global_data.update({
-        'slug': slugify(global_data['title']),
+        'slug': slugify.slugify(global_data['title']),
     })
 
     return global_data
