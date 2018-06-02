@@ -13,7 +13,7 @@ Planned Features
 * Audiobook scanner with metadata support.
 * Additional audiobook metadata in a YAML file called abook.
 * Valid RSS 2.0 and iTunes podcast feed.
-* Built-in podcast server using Tornado.
+* Built-in podcast server using aiohttp.
 * Asynchronous file streaming with seeking support (byte serving).
 * Easy transcoding to different audio formats.
 * Podlove Simple Chapters support.
