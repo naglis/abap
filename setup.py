@@ -6,13 +6,13 @@ from setuptools import find_packages, setup
 
 def get_version(filename):
     with open(filename) as f:
-        metadata = dict(re.findall(r'__([a-z]+)__ = \'([^\']+)\'', f.read()))
-        return metadata['version']
+        metadata = dict(re.findall(r'([A-Za-z_]+) = \'([^\']+)\'', f.read()))
+        return metadata['ABAP_VERSION']
 
 
 setup(
     name='abap',
-    version=get_version(pathlib.Path('abap/main.py')),
+    version=get_version(pathlib.Path('abap/const.py')),
     description='Audiobooks as podcasts',
     author='Naglis Jonaitis',
     author_email='naglis@mailbox.org',
