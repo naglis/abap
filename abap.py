@@ -272,7 +272,7 @@ class Abook(collections.abc.Mapping):
         if not yaml_data:
             try:
                 with open(self.manifest) as f:
-                    yaml_data = yaml.load(f)
+                    yaml_data = yaml.safe_load(f)
             except FileNotFoundError:
                 pass
 
