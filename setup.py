@@ -21,10 +21,10 @@ setup(
         'abap',
     ],
     install_requires=[
-        'PyYAML==3.12',
+        'PyYAML==3.13',
         'pytaglib==1.4.3',
-        'schema==0.6.7',
-        'aiohttp==3.3.0',
+        'schema==0.6.8',
+        'aiohttp==3.4.0',
         'python-slugify==1.2.5',
     ],
     tests_require=[
