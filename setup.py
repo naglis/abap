@@ -24,7 +24,7 @@ setup(
         'PyYAML==3.13',
         'pytaglib==1.4.3',
         'schema==0.6.8',
-        'aiohttp==3.4.0',
+        'aiohttp==3.4.1',
         'python-slugify==1.2.5',
     ],
     tests_require=[
