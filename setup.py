@@ -25,7 +25,7 @@ setup(
         'pytaglib==1.4.3',
         'schema==0.6.8',
         'aiohttp==3.4.2',
-        'python-slugify==1.2.5',
+        'python-slugify==1.2.6',
     ],
     tests_require=[
         'tox',
