@@ -7,9 +7,13 @@ cache:
 
 matrix:
     include:
-        - python: 3.6
-          env: {TOX_ENV: py36, COVERAGE: 1}
-        - python: 3.6
+        - python: 3.7
+          dist: xenial
+          sudo: true
+          env: {TOX_ENV: py37, COVERAGE: 1}
+        - python: 3.7
+          dist: xenial
+          sudo: true
           env: {TOX_ENV: qa}
 
 addons:
