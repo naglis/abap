@@ -9,7 +9,7 @@ Audiobooks as podcasts.
 Planned Features
 ----------------
 
-* Python 3.6+
+* Python 3.7+
 * Audiobook scanner with metadata support.
 * Additional audiobook metadata in a YAML file called abook.
 * Valid RSS 2.0 and iTunes podcast feed.
