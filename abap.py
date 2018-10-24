@@ -701,7 +701,7 @@ def load_renderers(entry_point_name='abap.xml_renderer'):
 def build_rss(directory: pathlib.Path,
               abook: Abook, reverse_url=lambda n, **kw: n,
               renderers: typing.Optional[typing.Mapping[
-                  str, typing.Type[XMLRenderer]]]=None) -> ET.Element:
+                  str, typing.Type[XMLRenderer]]] = None) -> ET.Element:
     renderers = renderers or load_renderers()
 
     extensions = collections.OrderedDict([
@@ -808,7 +808,7 @@ def make_app(abook: Abook):
     rss_feed.add_route('GET', rss_feed_handler)
 
     episode = app.router.add_resource(
-        '/abook/{slug}/episode/{sequence:\d+}.{ext}', name='episode',
+        r'/abook/{slug}/episode/{sequence:\d+}.{ext}', name='episode',
     )
     episode.add_route('GET', episode_handler)
 
