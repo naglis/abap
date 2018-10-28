@@ -22,7 +22,7 @@ setup(
     ],
     install_requires=[
         'PyYAML==3.13',
-        'pytaglib==1.4.3',
+        'pytaglib==1.4.4',
         'schema==0.6.8',
         'aiohttp==3.4.4',
         'python-slugify==1.2.6',
