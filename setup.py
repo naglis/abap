@@ -1,25 +1,23 @@
 import pathlib
 import re
 
-from setuptools import setup
+from setuptools import find_packages, setup
 
 
 def get_version(filename):
     with open(filename) as f:
-        metadata = dict(re.findall(r'__([a-z]+)__ = \'([^\']+)\'', f.read()))
-        return metadata['version']
+        metadata = dict(re.findall(r'([A-Za-z_]+) = \'([^\']+)\'', f.read()))
+        return metadata['ABAP_VERSION']
 
 
 setup(
     name='abap',
-    version=get_version(pathlib.Path('abap.py')),
+    version=get_version(pathlib.Path('abap/const.py')),
     description='Audiobooks as podcasts',
     author='Naglis Jonaitis',
     author_email='naglis@mailbox.org',
     license='MIT',
-    py_modules=[
-        'abap',
-    ],
+    packages=find_packages(),
     install_requires=[
         'PyYAML==3.13',
         'pytaglib==1.4.4',
@@ -32,16 +30,16 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'abap = abap:main',
+            'abap = abap.main:main',
         ],
         'abap.command': [
-            'init = abap:InitCommand',
-            'serve = abap:ServeCommand',
+            'init = abap.commands:InitCommand',
+            'serve = abap.commands:ServeCommand',
         ],
         'abap.xml_renderer': [
-            'rss2 = abap:RSSRenderer',
-            'itunes = abap:ITunesRenderer',
-            'podlove_chapters = abap:PodloveChapterRenderer',
+            'rss2 = abap.render:RSSRenderer',
+            'itunes = abap.render:ITunesRenderer',
+            'podlove_chapters = abap.render:PodloveChapterRenderer',
         ],
     },
     include_package_data=True,
