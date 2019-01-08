@@ -79,15 +79,15 @@ def make_app(abook: abook.Abook):
     app = aiohttp.web.Application()
     # FIXME(naglis): Make slug and ext more strict.
     rss_feed = app.router.add_resource(
-        '/abook/{slug}/feed/rss', name='rss_feed')
+        r'/abook/{slug}/feed/rss', name='rss_feed')
     rss_feed.add_route('GET', rss_feed_handler)
 
     episode = app.router.add_resource(
-        '/abook/{slug}/episode/{sequence:\d+}.{ext}', name='episode',
+        r'/abook/{slug}/episode/{sequence:\d+}.{ext}', name='episode',
     )
     episode.add_route('GET', episode_handler)
 
-    cover = app.router.add_resource('/abook/{slug}/cover', name='cover')
+    cover = app.router.add_resource(r'/abook/{slug}/cover', name='cover')
     cover.add_route('GET', cover_handler)
 
     app['abooks'] = {
