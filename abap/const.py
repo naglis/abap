@@ -19,6 +19,7 @@ AUDIO_EXTENSIONS = (
     'mp3',
     'ogg',
     'opus',
+    'flac',
 )
 IMAGE_EXTENSIONS = (
     'jpeg',
