@@ -22,8 +22,8 @@ setup(
         'PyYAML==3.13',
         'pytaglib==1.4.4',
         'schema==0.6.8',
-        'aiohttp==3.4.4',
-        'python-slugify==1.2.6',
+        'aiohttp==3.5.2',
+        'python-slugify==2.0.1',
     ],
     tests_require=[
         'tox',
