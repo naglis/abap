@@ -176,7 +176,7 @@ class PodloveChapterRenderer(XMLRenderer):
         if item.get('chapters'):
             chapters = self.el(
                 psc('chapters'),
-                version=PSC_VERSION,
+                version=const.PSC_VERSION,
             )
             for c in item.get('chapters', []):
                 chapters.append(self.el(
