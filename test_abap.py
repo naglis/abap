@@ -3,17 +3,13 @@ import pathlib
 import pytest
 import schema
 
+from abap.abook import Abook, ITEM_SCHEMA, merge
+from abap.render import RSSRenderer, build_rss
+from abap.utils import format_duration, parse_duration
+from abap.scan import get_tags
+from abap.main import main
 from abap import (
-    Abook,
-    ITEM_SCHEMA,
-    RSSRenderer,
     __version__,
-    build_rss,
-    format_duration,
-    get_tags,
-    main,
-    merge,
-    parse_duration,
 )
 
 
@@ -22,9 +18,14 @@ def here():
     return pathlib.Path(__file__).parent
 
 
+def test_dir(*parts):
+    parts = ['test_data'] + list(parts)
+    return pathlib.Path(__file__).parent.joinpath(*parts)
+
+
 @pytest.fixture
-def test_data():
-    return here() / 'test_data'
+def test_abook():
+    return Abook.from_directory(test_dir())
 
 
 @pytest.fixture
@@ -42,14 +43,14 @@ def fake_abook():
         ],
         'items': [
             {
-                'path': test_data() / 'empty.opus',
+                'path': test_dir('empty.opus'),
                 'title': 'Some title',
                 'mimetype': 'audio/ogg',
                 'size': 123,
             },
         ],
     }
-    return Abook(test_data(), fake_abook_data)
+    return Abook(test_dir(), fake_abook_data)
 
 
 @pytest.mark.parametrize('input, error_cls, expected', [
@@ -95,17 +96,16 @@ def test_merge_yaml_overrides(data, yaml_data, expected, here):
         assert result[k] == v
 
 
-def test_get_tags(test_data):
-    fn = test_data / 'empty.opus'
+def test_get_tags():
+    fn = test_dir('empty.opus')
     tags = get_tags(fn)
     assert tags.get('title') == 'empty'
     assert tags.get('authors') == ['A', 'B']
 
 
-def test_abook_from_directory(test_data):
-    abook = Abook.from_directory(test_data)
-    assert len(abook.get('items', [])) == 1
-    assert abook.get('title') == 'Unknown title'
+def test_abook_from_directory(test_abook):
+    assert len(test_abook.get('items', [])) == 1
+    assert test_abook.get('title') == 'Unknown title'
 
 
 def test_main_version(capsys):
@@ -117,15 +117,14 @@ def test_main_version(capsys):
     assert out.strip() == f'abap {__version__}'
 
 
-def test_merge_unknown_items_not_added(test_data):
-    abook = Abook.from_directory(test_data)
+def test_merge_unknown_items_not_added(test_abook):
     filename = 'non_existent.opus'
     yaml_data = {'items': [{
         'path': filename,
     }]}
-    abook.merge_manifest(yaml_data)
+    test_abook.merge_manifest(yaml_data)
     assert filename not in set(
-        map(lambda i: i['path'].name, abook.get('items', [])))
+        map(lambda i: i['path'].name, test_abook.get('items', [])))
 
 
 @pytest.mark.parametrize('item_dict, is_valid', [

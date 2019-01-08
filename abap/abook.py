@@ -159,16 +159,16 @@ def from_dir(directory: pathlib.Path, ignore_files) -> dict:
 
     if albums:
         if len(albums) > 1:
-            LOG.warn('Multiple values for album title found. '
-                     'Will use the first one')
+            LOG.warning('Multiple values for album title found. '
+                        'Will use the first one')
         global_data.update({
             'title': utils.first(list(albums.keys())),
         })
 
     if descriptions:
         if len(descriptions) > 1:
-            LOG.warn('Multiple values for description found. '
-                     'Will use the first one')
+            LOG.warning('Multiple values for description found. '
+                        'Will use the first one')
         global_data.update({
             'description': utils.first(list(descriptions.keys())),
         })
@@ -218,7 +218,7 @@ def merge(directory: pathlib.Path, data: typing.MutableMapping,
 
         current_item = items_by_path.get(item_path)
         if current_item is None:
-            LOG.warn(f'Unknown item: {item_path!s} in YAML data')
+            LOG.warning(f'Unknown item: {item_path!s} in YAML data')
             continue
 
         overrides = {}
