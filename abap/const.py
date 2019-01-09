@@ -1,5 +1,3 @@
-
-ABAP_VERSION = '0.1.1a'
 RSS_VERSION = '2.0'
 PSC_VERSION = '1.2'
 RFC822 = '%a, %d %b %Y %H:%M:%S +0000'

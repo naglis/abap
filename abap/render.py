@@ -9,7 +9,7 @@ import xml.etree.cElementTree as ET
 
 import pkg_resources
 
-from . import abook, const, utils
+from . import __version__, abook, const, utils
 
 LOG = logging.getLogger(__name__)
 
@@ -59,7 +59,7 @@ class XMLRenderer(metaclass=abc.ABCMeta):
 class RSSRenderer(XMLRenderer):
 
     def render_channel(self, abook: abook.Abook) -> ETGenerator:
-        yield self.el('generator', f'abap/{const.ABAP_VERSION}')
+        yield self.el('generator', f'abap/{__version__}')
 
         yield self.el('title', abook['title'])
 
@@ -77,7 +77,6 @@ class RSSRenderer(XMLRenderer):
             yield self.el('pubDate', time.strftime(
                 const.RFC822, abook.publication_date.timetuple()))
         '''
-
 
         cover_url = self.reverse_uri('cover', slug=abook['slug'])
         image = self.el('image')

@@ -5,7 +5,7 @@ import sys
 
 import pkg_resources
 
-from . import const, web, utils
+from . import __version__, const, web, utils
 
 LOG = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ def get_parsers():
     parser.add_argument(
         '--version',
         action='version',
-        version=f'%(prog)s {const.ABAP_VERSION}',
+        version=f'%(prog)s {__version__}',
     )
     parser.add_argument(
         '--debug',
