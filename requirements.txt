@@ -1,4 +1,4 @@
-PyYAML==3.13
+PyYAML==5.1
 pytaglib==1.4.4
 schema==0.6.8
 aiohttp==3.5.4
