@@ -1,4 +1,4 @@
-pytest-cov==2.6.1
+pytest-cov==2.7.1
 flake8==3.7.6
 flake8-quotes==2.0.1
 flake8-comprehensions==2.0.0
