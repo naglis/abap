@@ -1,5 +1,5 @@
 PyYAML==5.1.2
 pytaglib==1.4.4
-schema==0.7.0
+schema==0.7.1
 aiohttp==3.6.0
 python-slugify==3.0.3
