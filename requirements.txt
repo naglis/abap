@@ -2,4 +2,4 @@ PyYAML==5.1.2
 pytaglib==1.4.4
 schema==0.7.1
 aiohttp==3.6.1
-python-slugify==3.0.4
+python-slugify==4.0.0
